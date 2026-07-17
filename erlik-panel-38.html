@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#08070A">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ERLİK">
+<link rel="apple-touch-icon" href="erlik-192.png">
+<title>ERLİK</title>
+<style>
+  :root{
+    --void:#08070A; --ink:#0f0c08;
+    --core:#FFE7B0; --ember:#FFB23E; --mid:#FF8A1E; --glow:#FF6A12;
+    --line:rgba(255,150,60,.18); --dim:#a88f6d; --card:#15110b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;background:var(--void);overflow:hidden;
+    -webkit-user-select:none;user-select:none;touch-action:manipulation;
+    font-family:-apple-system,system-ui,"Segoe UI",sans-serif;color:#f0dcc0}
+  .app{position:fixed;inset:0;height:100dvh;
+    background:radial-gradient(130% 100% at 50% 0%, rgba(255,110,20,.06), transparent 60%), var(--void);}
+
+  /* ------- VIEW yonetimi ------- */
+  .view{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .25s;
+    display:flex;flex-direction:column}
+  .view.active{opacity:1;pointer-events:auto}
+
+  /* ------- HOME ------- */
+  .status{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 20px 6px}
+  .bat{margin-bottom:10px}
+  .bat .lbl{font-size:12px;color:var(--dim);letter-spacing:1px}
+  .bars{display:flex;gap:3px;margin-top:4px;align-items:center}
+  .bars i{width:7px;height:14px;background:#2a2114;border-radius:2px;display:inline-block}
+  .bars i.on{background:var(--ember);box-shadow:0 0 6px rgba(255,150,40,.6)}
+  .bars .pct{margin-left:8px;color:#e9cfa6;font-size:14px}
+  .clock{font-size:26px;color:var(--ember);font-weight:300;letter-spacing:2px}
+  .mind{margin:2px 20px 0;border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+    display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,rgba(255,120,20,.05),transparent)}
+  .mind .dot{width:8px;height:8px;border-radius:50%;background:var(--ember);box-shadow:0 0 8px var(--ember);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .mind span{letter-spacing:3px;font-size:13px;color:#e9cfa6}
+
+  .grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+    margin:16px 16px 20px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .tile{background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+    cursor:pointer;transition:background .15s}
+  .tile:active{background:#1c1610}
+  .tile svg{width:34px;height:34px;stroke:var(--ember);fill:none;stroke-width:1.6}
+  .tile .cap{font-size:13px;color:#d8c2a0;letter-spacing:.5px}
+  .brand{position:absolute;bottom:14px;left:0;right:0;text-align:center;letter-spacing:8px;
+    color:rgba(255,150,60,.35);font-size:12px}
+
+  /* ------- alt-ekran ortak ------- */
+  .head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .back{width:38px;height:38px;border-radius:10px;background:var(--card);border:none;color:var(--ember);font-size:20px}
+  .head h2{font-size:16px;letter-spacing:2px;color:#e9cfa6;font-weight:500}
+  .body{flex:1;padding:18px;overflow-y:auto}
+
+  /* YUZ */
+  #yuz{background:var(--void)}
+  #yuz .head{position:absolute;top:0;left:0;right:0;z-index:5;border:none;background:transparent}
+  #yuz .back{background:rgba(30,23,15,.6);backdrop-filter:blur(6px)}
+  .facewrap{flex:1;display:flex;align-items:center;justify-content:center;gap:9vmin}
+  .eye{width:20vmin;height:27vmin;transition:transform .55s ease,opacity .55s ease}
+  .facewrap.uyuyor .eye{transform:scaleY(.05);opacity:.4}
+  .eyeball{width:100%;height:100%;border-radius:42%/46%;
+    background:radial-gradient(60% 55% at 50% 38%, var(--core), var(--ember) 45%, var(--mid) 78%, var(--glow) 100%);
+    box-shadow:0 0 3vmin rgba(255,150,40,.55),0 0 8vmin rgba(255,110,20,.45),0 0 16vmin rgba(255,90,10,.28),
+      inset 0 -2vmin 4vmin rgba(180,50,0,.35),inset 0 2vmin 3vmin rgba(255,240,200,.35);
+    transition:transform .14s ease,height .3s ease,border-radius .3s ease;animation:glow 4s ease-in-out infinite}
+  @keyframes glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
+  .eyeball.blink{transform:scaleY(.06)}
+  .facewrap.happy .eyeball{height:14vmin;border-radius:50% 50% 12% 12%/90% 90% 20% 20%}
+
+  /* RC */
+  .drive{display:flex;flex-direction:column;gap:12px;max-width:320px;margin:6px auto}
+  .big{height:76px;border:none;border-radius:16px;background:var(--card);color:var(--ember);
+    font-size:20px;font-weight:600;letter-spacing:1px;box-shadow:0 0 14px rgba(255,120,20,.25)}
+  .big:active{background:var(--mid);color:#000}
+  .steer{display:block;width:100%;max-width:320px;margin:16px auto 8px;height:52px;border:none;border-radius:14px;
+    background:var(--card);color:var(--ember);font-size:15px;font-weight:600}
+  .steer.on{background:var(--mid);color:#000}
+  .steerbar{max-width:320px;margin:0 auto;height:8px;background:#0b0805;border-radius:6px;position:relative;overflow:hidden}
+  .steerbar .fill{position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--ember);
+    box-shadow:0 0 8px var(--ember);transition:transform .08s,left .08s}
+  .servo{display:flex;justify-content:center;margin:8px 0 4px}
+  .track{position:relative;width:58px;height:190px;background:#0b0805;border-radius:29px;border:1px solid var(--line)}
+  .track .mid{position:absolute;left:9px;right:9px;top:50%;height:2px;background:var(--dim);transform:translateY(-50%)}
+  .track .knob{position:absolute;left:50%;top:50%;width:46px;height:46px;border-radius:50%;background:var(--mid);
+    transform:translate(-50%,-50%);box-shadow:0 0 16px rgba(255,120,20,.55);touch-action:none}
+
+  .row{display:flex;align-items:center;justify-content:space-between;background:var(--card);
+    border-radius:12px;padding:13px 15px;margin:8px 0}
+  .row span{font-size:15px;color:#e9d3b3}
+  .seg{display:flex;background:#0b0805;border-radius:10px;overflow:hidden}
+  .seg button{border:none;background:none;color:#8a7a63;padding:9px 15px;font-size:13px;font-weight:600}
+  .seg button.on{background:var(--mid);color:#000}
+  .ipbox{display:flex;gap:8px;margin:8px 0}
+  .ipbox input{flex:1;background:#0b0805;border:1px solid #3a2e1d;color:var(--ember);border-radius:10px;padding:12px;font-size:15px}
+  .ipbox button{background:var(--mid);border:none;color:#000;border-radius:10px;padding:0 18px;font-weight:700}
+  .info{color:var(--dim);font-size:13px;line-height:1.6;background:var(--card);border-radius:12px;padding:14px;margin-top:6px}
+  .cam{width:100%;aspect-ratio:4/3;background:#0b0805;border:1px dashed var(--line);border-radius:14px;
+    display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:14px;text-align:center;padding:20px}
+
+  /* SOHBET */
+  .chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .msg{max-width:82%;padding:10px 13px;border-radius:15px;font-size:15px;line-height:1.45;white-space:pre-wrap;word-wrap:break-word}
+  .msg.user{align-self:flex-end;background:var(--mid);color:#000;border-bottom-right-radius:4px}
+  .msg.bot{align-self:flex-start;background:var(--card);color:#f0dcc0;border:1px solid var(--line);border-bottom-left-radius:4px}
+  .msg.sys{align-self:center;background:transparent;color:var(--dim);font-size:13px;text-align:center;max-width:92%}
+  .chatbar{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+  .chatbar input{flex:1;background:#0b0805;border:1px solid #3a2e1d;color:#f0dcc0;border-radius:22px;padding:12px 16px;font-size:15px}
+  .chatbar button{width:48px;height:48px;border:none;border-radius:50%;background:var(--mid);color:#000;font-size:18px}
+  .warn{background:rgba(255,120,20,.08);border:1px solid var(--line);border-radius:10px;padding:12px;
+    color:#e9c89a;font-size:13px;line-height:1.55;margin-top:8px}
+  .warn a{color:var(--ember);text-decoration:none}
+  .menuBtn{position:fixed;top:14px;left:14px;z-index:20;padding:10px 16px;border:none;border-radius:12px;
+    background:rgba(30,23,15,.78);color:var(--ember);font-size:15px;font-weight:600;backdrop-filter:blur(6px);
+    opacity:0;pointer-events:none;transform:translateY(-8px);transition:opacity .2s,transform .2s}
+  .menuBtn.show{opacity:1;pointer-events:auto;transform:translateY(0)}
+  @media (orientation:portrait){.menuBtn{top:auto;bottom:18px;left:18px}}
+  #micBtn{width:100%;padding:13px;border:1px solid var(--line);border-radius:12px;background:var(--card);
+    color:var(--ember);font-size:15px;font-weight:600}
+  #micBtn.on{background:var(--mid);color:#000}
+  .volwrap{height:14px;background:#0b0805;border-radius:7px;overflow:hidden;margin:10px 0;border:1px solid var(--line)}
+  .volbar{height:100%;width:0%;background:linear-gradient(90deg,var(--mid),var(--ember));transition:width .04s}
+  .micToggle{position:fixed;top:14px;right:14px;z-index:20;width:46px;height:46px;border-radius:50%;
+    border:none;background:rgba(30,23,15,.55);color:var(--dim);font-size:19px;backdrop-filter:blur(6px)}
+  .micToggle.on{background:var(--mid);color:#000;box-shadow:0 0 14px rgba(255,120,20,.5)}
+  .wakeDurum{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);max-width:88%;
+    text-align:center;color:#ffd9a8;font-size:15px;font-weight:600;z-index:15;pointer-events:none;
+    background:rgba(40,22,8,.8);padding:8px 15px;border-radius:20px;border:1px solid rgba(255,150,60,.35)}
+  .wakeDurum:empty{display:none}
+
+  .oturumListe{padding:6px 12px 90px;overflow-y:auto;height:100%}
+  .oturumBos{color:var(--dim);text-align:center;padding:50px 24px;line-height:1.6}
+  .oturumSatir{display:flex;align-items:center;gap:10px;padding:16px 10px;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .oturumSatir:active{background:rgba(255,255,255,.05)}
+  .oturumSatir .t{flex:1;color:#eee;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .oturumSatir .pin{color:var(--mid);font-size:13px}
+  .oturumSatir .zaman{color:var(--dim);font-size:12px}
+  .devamBtn{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;
+    background:var(--mid);color:#000;border:none;padding:14px 22px;border-radius:24px;font-size:15px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+  .sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;display:none;align-items:flex-end}
+  .sheet.show{display:flex}
+  .sheetIn{background:#1b1b1b;width:100%;border-radius:18px 18px 0 0;padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
+  .sheetIn button{display:block;width:100%;text-align:left;padding:17px 16px;background:none;border:none;color:#eee;font-size:16px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .sheetIn button:last-child{border:none;color:var(--dim);text-align:center}
+  .sheetIn button.dan{color:#ff6b6b}
+
+  .sesListe{margin-top:8px}
+  .sesGrup{color:var(--dim);font-size:11px;letter-spacing:1px;margin:14px 0 6px}
+  .sesSatir{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;background:var(--card);
+    border:1px solid var(--line);margin-bottom:7px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .sesSatir.sec{border-color:var(--mid);background:#1d1408}
+  .sesSatir .oynat{width:36px;height:36px;flex:0 0 36px;border-radius:50%;border:none;background:#2a2118;color:var(--mid);font-size:14px}
+  .sesSatir .oynat.calan{background:var(--mid);color:#000}
+  .sesSatir .bilgi{flex:1;min-width:0}
+  .sesSatir .isim{color:#eee;font-size:15px;font-weight:600}
+  .sesSatir .aciklama{color:var(--dim);font-size:12px;margin-top:1px}
+  .sesSatir .tik{color:var(--mid);font-size:16px}
+
+  .bolum{margin-top:16px;color:var(--dim);font-size:12px;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+  .bolum.tikla{cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .bolum .ok{color:var(--mid);font-size:13px}
+  .bolum .secad{color:var(--mid);margin-left:auto;letter-spacing:0;font-size:13px;font-weight:600}
+  .iBtn{width:19px;height:19px;flex:0 0 19px;border-radius:50%;border:1px solid var(--line);background:#241a10;
+    color:var(--mid);font-size:12px;font-weight:700;line-height:1;padding:0}
+  h2 .iBtn{margin-left:8px;vertical-align:middle}
+  .bilgiKutu{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:70;display:none;align-items:center;justify-content:center;padding:22px}
+  .bilgiKutu.show{display:flex}
+  .bilgiIc{background:#17150f;border:1px solid var(--line);border-radius:16px;padding:20px;max-width:420px;width:100%}
+  .bilgiIc #bilgiMetin{color:#e9d9c2;font-size:14px;line-height:1.6;white-space:pre-wrap}
+  .bilgiIc button{margin-top:16px;width:100%;padding:13px;border:none;border-radius:12px;background:var(--mid);color:#000;font-size:15px;font-weight:600}
+  .kaydir{width:100%;margin:2px 0 10px;accent-color:var(--mid)}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(140%);z-index:80;
+    display:flex;align-items:center;gap:14px;background:#241a10;border:1px solid rgba(255,150,60,.4);
+    color:#f0dcc0;padding:13px 18px;border-radius:26px;font-size:14px;box-shadow:0 6px 22px rgba(0,0,0,.6);
+    transition:transform .25s ease;max-width:90%}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast button{background:none;border:none;color:var(--mid);font-size:14px;font-weight:700;padding:0}
+
+  /* ---- RC KONSOL ---- */
+  .konsol{position:absolute;inset:0;background:radial-gradient(circle at 50% 60%,#141118,#08080a);overflow:hidden;touch-action:none}
+  .kBack{position:absolute;top:12px;left:12px;z-index:5;background:rgba(255,255,255,.06);border:1px solid var(--line);
+    color:var(--mid);width:40px;height:40px;border-radius:50%;font-size:20px}
+  .hud{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:5}
+  .hudKutu{background:rgba(0,0,0,.55);border:1px solid var(--line);border-radius:12px;padding:6px 14px;text-align:center;min-width:74px}
+  .hudKutu span{display:block;color:var(--dim);font-size:10px;letter-spacing:1px}
+  .hudKutu b{color:var(--mid);font-size:18px}
+  .kBtn{position:absolute;top:12px;right:12px;z-index:5;background:rgba(255,255,255,.06);border:1px solid var(--line);
+    color:var(--dim);padding:9px 14px;border-radius:20px;font-size:12px;font-weight:600}
+  .kBtn.on{background:var(--mid);color:#000;border-color:var(--mid)}
+  .dirBar{position:absolute;top:64px;left:50%;transform:translateX(-50%);width:56%;max-width:320px;height:8px;
+    background:rgba(255,255,255,.07);border-radius:6px;overflow:hidden;z-index:4}
+  .dirIc{position:absolute;top:0;bottom:0;left:50%;width:0;background:var(--mid);transition:.06s linear}
+  .dirOrta{position:absolute;top:-3px;bottom:-3px;left:50%;width:2px;background:rgba(255,255,255,.35)}
+  .fren{position:absolute;left:6%;bottom:32%;width:26vw;max-width:118px;aspect-ratio:1;border-radius:50%;
+    background:radial-gradient(circle at 40% 35%,#5a1f1f,#2a0d0d);border:2px solid #7a2a2a;
+    display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;z-index:4}
+  .fren:active,.fren.bas{background:radial-gradient(circle at 40% 35%,#ff5a5a,#8e1f1f);box-shadow:0 0 30px rgba(255,60,60,.5)}
+  .frenIc{color:#ffb3b3;font-weight:700;font-size:14px;text-align:center;line-height:1.5}
+  .frenIc span{font-size:22px}
+  .gaz{position:absolute;right:7%;bottom:12%;top:24%;display:flex;align-items:center;z-index:4}
+  .gazTrack{position:relative;width:64px;height:100%;background:#111015;border:1px solid var(--line);border-radius:32px;overflow:hidden}
+  .gazDolu{position:absolute;left:0;right:0;background:linear-gradient(180deg,var(--mid),#8a4a10);opacity:.55}
+  .gazOrta{position:absolute;left:0;right:0;top:50%;height:2px;background:rgba(255,255,255,.25)}
+  .gazKnob{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56px;height:34px;border-radius:17px;
+    background:linear-gradient(180deg,#ffd9a0,var(--mid));box-shadow:0 3px 10px rgba(0,0,0,.6)}
+  .gazEt{position:absolute;left:0;right:0;text-align:center;color:var(--dim);font-size:9px;letter-spacing:1px}
+  .gazEt.ust{top:6px} .gazEt.alt{bottom:6px}
+  .kafa{position:absolute;left:50%;transform:translateX(-50%);bottom:20px;text-align:center;z-index:4}
+  .kafa span{color:var(--dim);font-size:10px;letter-spacing:1px}
+  .kafaTrack{position:relative;width:150px;height:22px;background:#111015;border:1px solid var(--line);border-radius:11px;margin-top:5px}
+  .kafaTrack .mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,.25)}
+  .kafaTrack .knob{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;
+    background:linear-gradient(180deg,#ffd9a0,var(--mid));box-shadow:0 2px 8px rgba(0,0,0,.6)}
+
+  .modSeg{position:absolute;top:12px;right:12px;z-index:5;display:flex;background:#111015;border:1px solid var(--line);border-radius:20px;overflow:hidden}
+  .modSeg button{background:none;border:none;color:var(--dim);padding:9px 13px;font-size:12px;font-weight:600}
+  .modSeg button.on{background:var(--mid);color:#000}
+  .dirPad{position:absolute;left:4%;bottom:6%;width:50vw;max-width:290px;height:74px;z-index:4;
+    background:linear-gradient(180deg,rgba(30,26,20,.9),rgba(14,12,10,.9));border:1px solid var(--line);
+    border-radius:37px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;
+    box-shadow:inset 0 2px 10px rgba(0,0,0,.6);-webkit-tap-highlight-color:transparent}
+  .dirPad .pOk{color:var(--dim);font-size:26px;pointer-events:none;transition:.1s}
+  .dirPad.solAktif .pOk.sol{color:var(--mid);text-shadow:0 0 14px rgba(255,140,30,.8);transform:scale(1.25)}
+  .dirPad.sagAktif .pOk.sag{color:var(--mid);text-shadow:0 0 14px rgba(255,140,30,.8);transform:scale(1.25)}
+  .pCizgi{position:absolute;left:50%;top:14px;bottom:14px;width:2px;background:rgba(255,255,255,.18);pointer-events:none}
+  .pTop{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;
+    background:radial-gradient(circle at 40% 35%,#ffe0b0,var(--mid));box-shadow:0 4px 14px rgba(0,0,0,.7);pointer-events:none;transition:.06s linear}
+  .fren.solaKay{left:auto;right:auto}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= HOME (menü) ================= -->
+  <div class="view" id="home">
+    <div class="status">
+      <div>
+        <div class="bat"><div class="lbl">TELEFON</div>
+          <div class="bars" id="batBars"><span class="pct" id="batPct">—</span></div>
+        </div>
+        <div class="mind" style="display:inline-flex;margin:0"><div class="dot"></div><span>ERLİK'İN ZİHNİ</span></div>
+      </div>
+      <div class="clock" id="clock">--:--</div>
+    </div>
+
+    <div class="grid">
+      <div class="tile" onclick="go('yuz')">
+        <svg viewBox="0 0 24 24"><circle cx="8.5" cy="12" r="2.5"/><circle cx="15.5" cy="12" r="2.5"/></svg>
+        <div class="cap">Yüz</div>
+      </div>
+      <div class="tile" onclick="go('rc')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="9" rx="4"/><line x1="8" y1="12" x2="8" y2="14"/><line x1="7" y1="13" x2="9" y2="13"/><circle cx="16" cy="12.5" r="1"/></svg>
+        <div class="cap">RC / Sürüş</div>
+      </div>
+      <div class="tile" onclick="go('kamera')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M9 7l1.5-2h3L15 7"/></svg>
+        <div class="cap">Kamera</div>
+      </div>
+      <div class="tile" onclick="go('ayarlar')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+        <div class="cap">Ayarlar</div>
+      </div>
+      <div class="tile" onclick="go('wifi')">
+        <svg viewBox="0 0 24 24"><path d="M2 8.5a15 15 0 0120 0M5 12a10 10 0 0114 0M8 15.5a5 5 0 018 0"/><circle cx="12" cy="19" r="1"/></svg>
+        <div class="cap">WiFi</div>
+      </div>
+      <div class="tile" onclick="go('sohbet')">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16v10H9l-4 4V5z"/></svg>
+        <div class="cap">Sohbet</div>
+      </div>
+    </div>
+    <div class="brand">E R L İ K</div>
+  </div>
+
+  <!-- ================= YUZ (açılış ekranı) ================= -->
+  <div class="view active" id="yuz">
+    <button class="menuBtn" id="menuBtn" onclick="go('home')">‹ Menü</button>
+    <div class="wakeDurum" id="wakeDurum"></div>
+    <div class="facewrap" id="facewrap">
+      <div class="eye"><div class="eyeball" id="eyeL"></div></div>
+      <div class="eye"><div class="eyeball" id="eyeR"></div></div>
+    </div>
+  </div>
+
+  <!-- ================= RC ================= -->
+  <div class="view" id="rc">
+    <div class="konsol">
+      <button class="kBack" onclick="go('home')">‹</button>
+      <div class="hud">
+        <div class="hudKutu"><span>HIZ</span><b id="hudHiz">0</b></div>
+        <div class="hudKutu"><span>YÖN</span><b id="hudYon">—</b></div>
+      </div>
+      <div class="modSeg" id="modSeg">
+        <button data-m="tus" class="on" onclick="dirMod('tus')">🕹 TUŞ</button><button data-m="egim" onclick="dirMod('egim')">📱 EĞİM</button>
+      </div>
+
+      <!-- direksiyon göstergesi -->
+      <div class="dirBar"><div class="dirIc" id="dirIc"></div><div class="dirOrta"></div></div>
+
+      <!-- SOL ALT: birleşik direksiyon (tuş modu) -->
+      <div class="dirPad" id="dirPad">
+        <div class="pOk sol">◀</div>
+        <div class="pOk sag">▶</div>
+        <div class="pCizgi"></div>
+        <div class="pTop" id="pTop"></div>
+      </div>
+
+      <!-- SOL: fren -->
+      <div class="fren" id="frenBtn">
+        <div class="frenIc">FREN<br><span>⛔</span></div>
+      </div>
+
+      <!-- SAĞ: gaz kolu -->
+      <div class="gaz">
+        <div class="gazTrack" id="gazTrack">
+          <div class="gazDolu" id="gazDolu"></div>
+          <div class="gazOrta"></div>
+          <div class="gazKnob" id="gazKnob"></div>
+          <div class="gazEt ust">İLERİ</div>
+          <div class="gazEt alt">GERİ</div>
+        </div>
+      </div>
+
+      <!-- ALT ORTA: kafa -->
+      <div class="kafa">
+        <span>KAFA</span>
+        <div class="kafaTrack" id="servoTrack"><div class="mid"></div><div class="knob" id="servoKnob"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= KAMERA ================= -->
+  <div class="view" id="kamera">
+    <div class="head"><button class="back" onclick="go('home')">‹</button><h2>KAMERA <button class="iBtn" onclick="bilgiAc('kamera')">!</button></h2></div>
+    <div class="body">
+      <div class="cam" id="camBox">El / kol / yüz takibi buraya gelecek<br>(MediaPipe — ücretsiz, keysiz)</div>
+    </div>
+  </div>
+
+  <!-- ================= AYARLAR ================= -->
+  <div class="view" id="ayarlar">
+    <div class="head"><button class="back" onclick="go('home')">‹</button><h2>AYARLAR</h2><span id="surumEt" style="margin-left:auto;color:var(--dim);font-size:11px"></span></div>
+    <div class="body">
+      <div class="row"><span>Kişilik</span>
+        <div class="seg" data-mod="kisilik">
+          <button data-v="normal" class="on">Normal</button><button data-v="bikkin">Bıkkın</button>
+        </div></div>
+      <div class="row"><span>ERLİK'in ses seviyesi</span><b id="seviyeDeger">100%</b></div>
+      <input type="range" class="kaydir" min="0" max="1" step="0.05" value="1" oninput="seviyeAyar(this.value)">
+      <div class="row"><span>Yankı engelleme</span>
+        <div class="seg" id="aecSeg">
+          <button data-a="1" class="on" onclick="aecSec('1')">Açık</button><button data-a="0" onclick="aecSec('0')">Kapalı</button>
+        </div></div>
+      <div class="info">AÇIK: sözünü kesebilirsin, ses "görüşme" kanalından çıkar.<br>KAPALI: ses MEDYA kanalından çıkar (ses tuşlarıyla tam kısılır) — ERLİK kendini duyarsa geri aç.</div>
+      <div class="bolum">SES MOTORU <button class="iBtn" onclick="bilgiAc('motor')">!</button></div>
+      <div class="row"><span>Seslendiren</span>
+        <div class="seg" id="motorSeg">
+          <button data-m="gemini" class="on" onclick="motorSec('gemini')">Gemini</button><button data-m="telefon" onclick="motorSec('telefon')">Telefon</button>
+        </div></div>
+      <div id="telefonKutu">
+        <div class="row"><span>Tizlik (çocuk ↔ kalın)</span><b id="tizDeger">1.0</b></div>
+        <input type="range" class="kaydir" min="0.5" max="2" step="0.1" value="1" oninput="telefonAyar('tiz',this.value)">
+        <div class="row"><span>Konuşma hızı</span><b id="hizDeger">1.0</b></div>
+        <input type="range" class="kaydir" min="0.6" max="1.6" step="0.1" value="1" oninput="telefonAyar('hiz',this.value)">
+        <div class="ipbox"><button onclick="sesTesti()" style="width:100%">🔊 SES TESTİ — "Merhaba"</button></div>
+        <div class="ipbox"><button onclick="modelleriListele()" style="width:100%">🔎 ANAHTARIMDAKİ LIVE MODELLER</button></div>
+        <div class="info" id="modelListe" style="white-space:pre-wrap">Listeyi görmek için yukarıdaki düğmeye bas.</div>
+        <div class="info" id="telTeshis">Kontrol ediliyor…</div>
+      </div>
+      <div class="bolum tikla" onclick="sesAcKapa()"><span class="ok" id="sesOk">▾</span> ERLİK'İN SESİ
+        <button class="iBtn" onclick="event.stopPropagation();bilgiAc('ses')">!</button>
+        <span class="secad" id="sesSecili"></span></div>
+      <div id="sesListe" class="sesListe"></div>
+      <div class="row"><span>RGB Işık</span>
+        <div class="seg" data-mod="rgb">
+          <button data-v="1" class="on">Açık</button><button data-v="0">Kapalı</button>
+        </div></div>
+      <div class="bolum">ROBOT BAĞLANTISI <button class="iBtn" onclick="bilgiAc('ip')">!</button></div>
+      <div class="ipbox">
+        <input id="ip" value="192.168.1.113" placeholder="ESP IP adresi">
+        <button onclick="ipKaydet()">Ayarla</button>
+      </div>
+      <div class="info" id="ipDurum">ESP IP: 192.168.1.113</div>
+
+      <div class="bolum">YAPAY ZEKA ANAHTARI (GEMINI) <button class="iBtn" onclick="bilgiAc('key')">!</button></div>
+      <div class="ipbox">
+        <input id="key" placeholder="AIza... (ücretsiz key)" autocomplete="off">
+        <button onclick="keyKaydet()">Kaydet</button>
+      </div>
+      <div class="info" id="keyDurum">Anahtar girilmedi.</div>
+      <div class="warn">⚠ Anahtarı <b>Google AI Studio</b>'dan birebir kopyala-yapıştır yap. Tek karakter yanlış olursa ERLİK konuşamaz. <a href="https://aistudio.google.com/apikey" target="_blank">Ücretsiz anahtar al →</a></div>
+
+
+      <div class="bolum">MİKROFON TESTİ <button class="iBtn" onclick="bilgiAc('mic')">!</button></div>
+      <button id="micBtn">🎙️ Mikrofonu Test Et</button>
+      <div class="volwrap"><div class="volbar" id="volbar"></div></div>
+      <div class="info" id="micDurum">Mikrofon kapalı. Test edince izin ister; konuşunca çubuk oynar ve gözler parlar.</div>
+    </div>
+  </div>
+
+  <!-- ================= WIFI ================= -->
+  <div class="view" id="wifi">
+    <div class="head"><button class="back" onclick="go('home')">‹</button><h2>WİFİ <button class="iBtn" onclick="bilgiAc('wifi')">!</button></h2></div>
+    <div class="body">
+      <div class="row"><span>İnternet durumu</span><b id="netDurum" style="color:var(--ember)">—</b></div>
+    </div>
+  </div>
+
+  <!-- ================= SOHBET (sadece geçmiş) ================= -->
+  <div class="view" id="sohbet">
+    <div class="head"><button class="back" onclick="sohbetGeri()">‹</button><h2 id="sohbetBaslik">SOHBETLER</h2></div>
+    <div id="oturumListe" class="oturumListe"></div>
+    <div id="oturumDetay" class="chat" style="display:none;padding-bottom:90px"></div>
+    <button id="devamBtn" class="devamBtn" onclick="oturumDevam()" style="display:none">▶ Bu sohbetten devam et</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">
+  <span id="toastMetin"></span>
+  <button id="toastGeri" onclick="toastGeriAl()">Geri al</button>
+</div>
+<div class="bilgiKutu" id="bilgiKutu" onclick="if(event.target===this)bilgiKapat()">
+  <div class="bilgiIc">
+    <div id="bilgiMetin"></div>
+    <button onclick="bilgiKapat()">Tamam</button>
+  </div>
+</div>
+
+<div class="sheet" id="oturumSheet" onclick="if(event.target===this)sheetKapat()">
+  <div class="sheetIn">
+    <button id="sheetPin" onclick="oturumSabitToggle()">📌 Başa sabitle</button>
+    <button class="dan" onclick="oturumSilConfirm()">🗑 Sil</button>
+    <button onclick="sheetKapat()">İptal</button>
+  </div>
+</div>
+<script>
+  const SURUM="v22 — HATA GİDERİLDİ";
+  let espIP="192.168.1.113";
+  const modlar={kisilik:'normal',ses:'normal'};
+
+  // ---- view gecis ----
+  function go(id){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('menuBtn').classList.remove('show');
+    if(id!=='rc'){ try{ h=0; if(window.gazSifirla) window.gazSifirla(); if(espIP) cmd('surus?h=0&y=0'); }catch(e){} }
+    if(id!=='yuz'){                                   // YÜZ DIŞINDA: mikrofon + ısınan bağlantı KAPANIR
+      liveKapat();                                   // (açık soket kalırsa örnek dinleme 1006 ile düşer)
+      try{ sesleriDurdur(); }catch(e){}
+    } else {                                          // yüze dönünce arkada tekrar ısın
+      try{ if(!ws || ws.readyState>1) liveBaglan(); }catch(e){}
+    }
+    if(id==='rc'){ try{ dirModu = store.get('erlik_dir_mod') || 'tus'; dirMod(dirModu); }catch(e){} }
+    if(id==='sohbet') sohbetYukle();
+    if(id==='ayarlar'){ keyDurumGoster(); sesListesiYap(); try{ document.getElementById('surumEt').innerText=SURUM;
+        document.querySelectorAll('#motorSeg button').forEach(b=>b.classList.toggle('on', b.dataset.m===ttsMotor));
+        document.getElementById('telefonKutu').style.display=(ttsMotor==='telefon')?'':'none';
+        document.getElementById('seviyeDeger').innerText=Math.round(sesSeviye*100)+'%';
+        document.querySelectorAll('#aecSeg button').forEach(b=>b.classList.toggle('on', b.dataset.a===(aecAcik?'1':'0')));
+        const sr=document.querySelector('input[oninput*="seviyeAyar"]'); if(sr) sr.value=sesSeviye;
+      }catch(e){}
+      try{
+        document.getElementById('tizDeger').innerText=telefonTiz.toFixed(1);
+        document.getElementById('hizDeger').innerText=telefonHiz.toFixed(1);
+        const rs=document.querySelectorAll('#telefonKutu .kaydir'); if(rs[0]) rs[0].value=telefonTiz; if(rs[1]) rs[1].value=telefonHiz;
+        sesBaslikGuncelle(); telefonTeshis(); setTimeout(telefonTeshis,800);
+      }catch(e){}  if(sesAcik) sesListesiYap(); } else { try{ onizlemeDurdur(); }catch(e){} }
+  }
+
+  // ---- saat ----
+  function saat(){const d=new Date();document.getElementById('clock').innerText=
+    String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+  saat();setInterval(saat,10000);
+
+  // ---- pil (varsa) ----
+  if(navigator.getBattery){
+    navigator.getBattery().then(b=>{
+      const ciz=()=>{
+        const p=Math.round(b.level*100),n=Math.round(b.level*8);
+        let h='';for(let i=0;i<8;i++)h+=`<i class="${i<n?'on':''}"></i>`;
+        h+=`<span class="pct">%${p}</span>`;
+        document.getElementById('batBars').innerHTML=h;
+      };
+      ciz();b.addEventListener('levelchange',ciz);
+    });
+  } else { document.getElementById('batPct').innerText='—'; }
+
+  // ---- net durumu ----
+  function net(){document.getElementById('netDurum').innerText=navigator.onLine?'Bağlı':'Bağlı değil';}
+  net();window.addEventListener('online',net);window.addEventListener('offline',net);
+
+  // ---- gozler ----
+  const fw=document.getElementById('facewrap'),eyeL=document.getElementById('eyeL'),eyeR=document.getElementById('eyeR');
+  const rand=(a,b)=>a+Math.random()*(b-a);
+  function blink(){eyeL.classList.add('blink');eyeR.classList.add('blink');
+    setTimeout(()=>{eyeL.classList.remove('blink');eyeR.classList.remove('blink')},rand(90,150));}
+  (function sb(){setTimeout(()=>{blink();if(Math.random()<.25)setTimeout(blink,320);sb();},rand(2600,6200));})();
+  (function la(){setTimeout(()=>{fw.style.transition='transform .5s';
+    fw.style.transform=`translate(${rand(-4,4)}vmin,${rand(-2,2)}vmin)`;
+    setTimeout(()=>fw.style.transform='translate(0,0)',rand(900,1700));la();},rand(3200,7000));})();
+  let sonDokun=0, menuTimer=null, cifteBekle=null;
+  function menuGoster(){
+    const b=document.getElementById('menuBtn'); b.classList.add('show');
+    clearTimeout(menuTimer); menuTimer=setTimeout(()=>b.classList.remove('show'),4500);
+  }
+  // Yüz ekranı: TEK dokunuş -> konuş/sevin | ÇİFT dokunuş -> menü (durumdan bağımsız)
+  document.getElementById('yuz').addEventListener('pointerdown',()=>{
+    const now=Date.now();
+    if(now-sonDokun<380){                      // çift dokunma
+      clearTimeout(cifteBekle); cifteBekle=null; sonDokun=0;
+      menuGoster(); return;
+    }
+    sonDokun=now;
+    clearTimeout(cifteBekle);
+    cifteBekle=setTimeout(()=>{                // ikinci dokunuş gelmedi -> tek dokunuş
+      if(durum==='kapali') konusmayaBasla();
+      else { fw.classList.add('happy'); blink(); setTimeout(()=>fw.classList.remove('happy'),1100); }
+    },300);
+  });
+
+  // ---- SÜRÜŞ (ileri/geri düğme + eğerek direksiyon) ----
+  function cmd(c){fetch(`http://${espIP}/${c}`,{mode:'no-cors'}).catch(()=>{});}
+
+  let h=0, yon=0, direksiyon=false;
+
+  // ---- GAZ KOLU (drone gibi: bıraktığın yerde kalır) ----
+  (function(){
+    const tr=document.getElementById('gazTrack'), kn=document.getElementById('gazKnob'), dl=document.getElementById('gazDolu');
+    let tut=false;
+    function ciz(p){                       // p: 0(üst)…1(alt)
+      kn.style.top=(p*100)+'%';
+      const orta=0.5;
+      if(p<orta){ dl.style.top=(p*100)+'%'; dl.style.bottom='50%'; }
+      else      { dl.style.top='50%';       dl.style.bottom=((1-p)*100)+'%'; }
+      h=Math.round((orta-p)*2*255);
+      if(Math.abs(h)<24) h=0;              // orta ölü bölge
+      document.getElementById('hudHiz').innerText=Math.round(Math.abs(h)/255*100);
+      document.getElementById('hudYon').innerText = h>0?'İLERİ':(h<0?'GERİ':'—');
+    }
+    function ayarla(cy){
+      const r=tr.getBoundingClientRect();
+      let p=(cy-r.top)/r.height; p=Math.max(0,Math.min(1,p));
+      if(Math.abs(p-0.5)<0.05) p=0.5;      // ortaya yapış
+      ciz(p);
+    }
+    const bas=e=>{ tut=true; ayarla((e.touches?e.touches[0]:e).clientY); e.preventDefault(); };
+    const oyna=e=>{ if(tut){ ayarla((e.touches?e.touches[0]:e).clientY); e.preventDefault(); } };
+    const birak=()=>{ tut=false; };        // bırakınca SIFIRLANMAZ (drone mantığı)
+    tr.addEventListener('touchstart',bas,{passive:false});
+    tr.addEventListener('touchmove',oyna,{passive:false});
+    tr.addEventListener('touchend',birak);
+    tr.addEventListener('mousedown',bas);
+    window.addEventListener('mousemove',oyna);
+    window.addEventListener('mouseup',birak);
+    window.gazSifirla=()=>ciz(0.5);
+  })();
+
+  // ---- FREN (basılıyken anında durur) ----
+  (function(){
+    const f=document.getElementById('frenBtn');
+    const bas=e=>{ e.preventDefault(); f.classList.add('bas'); window.gazSifirla(); if(espIP) cmd('surus?h=0&y=0'); };
+    const kalk=()=>f.classList.remove('bas');
+    f.addEventListener('touchstart',bas,{passive:false});
+    f.addEventListener('mousedown',bas);
+    f.addEventListener('touchend',kalk); f.addEventListener('mouseup',kalk);
+  })();
+
+  // ---- DİREKSİYON (telefonu eğ) ----
+  function oku(e){
+    if(e.gamma==null) return;
+    yon=Math.max(-100,Math.min(100,Math.round(e.gamma*3)));
+    dirCiz(yon);
+  }
+  let dirModu = 'tus';   // gerçek değer RC açılınca store'dan okunur
+  async function dirMod(m){
+    dirModu=m; store.set('erlik_dir_mod',m);
+    document.querySelectorAll('#modSeg button').forEach(b=>b.classList.toggle('on', b.dataset.m===m));
+    const ped=document.getElementById('dirPad');
+    if(m==='egim'){
+      ped.style.display='none';
+      if(typeof DeviceOrientationEvent!=='undefined' && DeviceOrientationEvent.requestPermission){
+        try{ const p=await DeviceOrientationEvent.requestPermission(); if(p!=='granted'){ bildir('Sensör izni verilmedi'); dirMod('tus'); return; } }catch(e){}
+      }
+      window.addEventListener('deviceorientation',oku);
+      direksiyon=true;
+    } else {
+      ped.style.display='';
+      window.removeEventListener('deviceorientation',oku);
+      direksiyon=false; yon=0; dirCiz(0);
+    }
+  }
+  function dirCiz(v){                       // v: -100..100
+    const ic=document.getElementById('dirIc');
+    if(v>=0){ ic.style.left='50%'; ic.style.width=(v/2)+'%'; }
+    else    { ic.style.left=(50+v/2)+'%'; ic.style.width=(-v/2)+'%'; }
+    const pad=document.getElementById('dirPad'), top=document.getElementById('pTop');
+    if(pad && top){
+      top.style.left=(50 + v*0.36)+'%';
+      pad.classList.toggle('solAktif', v<-12);
+      pad.classList.toggle('sagAktif', v>12);
+    }
+  }
+
+  // ---- BİRLEŞİK DİREKSİYON PEDİ (parmağı kaldırmadan sağa-sola) ----
+  (function(){
+    const pad=document.getElementById('dirPad');
+    let tut=false;
+    function ayarla(cx){
+      const r=pad.getBoundingClientRect();
+      let v=((cx-r.left)/r.width - 0.5)*2*100;      // -100..100
+      v=Math.max(-100,Math.min(100,Math.round(v)));
+      if(Math.abs(v)<10) v=0;                        // orta ölü bölge
+      yon=v; dirCiz(v);
+    }
+    const bas=e=>{ tut=true; ayarla((e.touches?e.touches[0]:e).clientX); e.preventDefault(); };
+    const oyna=e=>{ if(tut){ ayarla((e.touches?e.touches[0]:e).clientX); e.preventDefault(); } };
+    const birak=()=>{ if(tut){ tut=false; yon=0; dirCiz(0); } };   // bırakınca düz
+    pad.addEventListener('touchstart',bas,{passive:false});
+    pad.addEventListener('touchmove',oyna,{passive:false});
+    pad.addEventListener('touchend',birak); pad.addEventListener('touchcancel',birak);
+    pad.addEventListener('mousedown',bas);
+    window.addEventListener('mousemove',oyna);
+    window.addEventListener('mouseup',birak);
+  })();
+
+  // sürekli akış
+  setInterval(()=>{
+    if(!espIP) return;
+    cmd(`surus?h=${h}&y=${yon}`);
+  },130);
+
+  // ---- KAFA servo slider (dikey, ortada çizgi) ----
+  (function(){
+    const track=document.getElementById('servoTrack'), knob=document.getElementById('servoKnob');
+    let drag=false, son=0;
+    function ayarla(cy){
+      const r=track.getBoundingClientRect();
+      let p=(cy-r.top)/r.height; p=Math.max(0,Math.min(1,p));
+      knob.style.top=(p*100)+'%';
+      const aci=Math.round(150 - p*120);   // üst=150 (yukarı bak), alt=30 (aşağı bak)
+      const now=Date.now();
+      if(now-son>110){ son=now; cmd('servo?a='+aci); }
+    }
+    const bas=e=>{drag=true; ayarla((e.touches?e.touches[0]:e).clientY); e.preventDefault();};
+    const oyna=e=>{ if(drag) ayarla((e.touches?e.touches[0]:e).clientY); };
+    const bit=()=>drag=false;
+    track.addEventListener('touchstart',bas,{passive:false});
+    track.addEventListener('touchmove',oyna,{passive:false});
+    track.addEventListener('touchend',bit);
+    track.addEventListener('mousedown',bas);
+    window.addEventListener('mousemove',oyna);
+    window.addEventListener('mouseup',bit);
+  })();
+
+  // ---- modlar ----
+  document.querySelectorAll('.seg').forEach(seg=>{
+    if(seg.id==='motorSeg') return;          // ses motoru kendi onclick'ini kullanir
+    seg.querySelectorAll('button').forEach(btn=>{
+      btn.onclick=()=>{seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+        btn.classList.add('on');modlar[seg.dataset.mod]=btn.dataset.v;
+        if(seg.dataset.mod==='rgb') cmd('rgb?on='+btn.dataset.v);};
+    });
+  });
+
+  // ---- ip ----
+  function ipKaydet(){espIP=document.getElementById('ip').value.trim();
+    document.getElementById('ipDurum').innerText='ESP IP: '+espIP+' — ayarlandı';}
+
+  // ======================= SOHBET + HAFIZA + KEY =======================
+  // Telefonda saklama (önizlemede otomatik geçici hafızaya düşer)
+  const _mem={};
+  const store={
+    get(k){ try{return localStorage.getItem(k);}catch(e){return (k in _mem)?_mem[k]:null;} },
+    set(k,v){ try{localStorage.setItem(k,v);}catch(e){_mem[k]=v;} }
+  };
+
+  let apiKey  = store.get('erlik_key') || '';
+  let profil  = store.get('erlik_profil') || '';
+  let mesajSay = 0;
+
+  // ===== OTURUMLAR (Gemini gibi gecmis) =====
+  function yeniOturum(){ return {id:Date.now()+Math.floor(Math.random()*1000), baslik:'', sabit:false, ts:Date.now(), mesajlar:[]}; }
+  function baslikYap(msgs){ const u=(msgs||[]).find(m=>m.role==='user'); return ((u?u.text:'Sohbet')||'Sohbet').slice(0,42); }
+  function migreEskiGecmis(){
+    try{ const h=JSON.parse(store.get('erlik_history')||'[]'); if(h.length){ return [{id:Date.now(), baslik:baslikYap(h), sabit:false, ts:Date.now(), mesajlar:h}]; } }catch(e){}
+    return [];
+  }
+  let oturumlar = JSON.parse(store.get('erlik_oturumlar')||'null') || migreEskiGecmis();
+  function aktifYap(o){ aktifOturum=o; try{ sessionStorage.setItem('erlik_aktif', o.id); }catch(e){} }
+  let aktifOturum;
+  (function(){
+    let sid=null; try{ sid=sessionStorage.getItem('erlik_aktif'); }catch(e){}
+    const b = sid ? oturumlar.find(o=>String(o.id)===String(sid)) : null;
+    aktifYap(b || yeniOturum());   // sessionStorage duruyorsa (recents) ayni oturum; yoksa (uygulama kapatildi) yeni
+  })();
+  function oturumlariKaydet(){ try{ store.set('erlik_oturumlar', JSON.stringify(oturumlar.slice(0,80))); }catch(e){} }
+  function oturumaEkle(role,text){
+    if(!text) return;
+    aktifOturum.mesajlar.push({role,text}); aktifOturum.ts=Date.now();
+    if(!oturumlar.some(o=>o.id===aktifOturum.id)) oturumlar.unshift(aktifOturum);
+    if(!aktifOturum.baslik) aktifOturum.baslik=baslikYap(aktifOturum.mesajlar);
+    oturumlariKaydet();
+  }
+
+  // ---- KEY yönetimi (2 kez onay + uyarı) ----
+  function keyDurumGoster(){
+    const d=document.getElementById('keyDurum');
+    d.innerText = apiKey ? ('Anahtar kayıtlı: '+apiKey.slice(0,6)+'…'+apiKey.slice(-4)) : 'Anahtar girilmedi.';
+  }
+  function keyKaydet(){
+    const v=document.getElementById('key').value.trim();
+    if(!v){ bildir('Önce anahtarı yapıştır'); return; }
+    apiKey=v; store.set('erlik_key',v);
+    document.getElementById('key').value='';
+    keyDurumGoster();
+    bildir('Anahtar kaydedildi');
+  }
+
+  // ---- Gemini çağrısı ----
+
+
+
+  // ---- kendi bildirim şeridimiz (tarayıcı kutusu yerine) ----
+  let toastZaman=null, geriAlIs=null;
+  function bildir(mesaj, geriAl){
+    const t=document.getElementById('toast');
+    document.getElementById('toastMetin').innerText=mesaj;
+    const b=document.getElementById('toastGeri');
+    geriAlIs=geriAl||null;
+    b.style.display=geriAl?'':'none';
+    t.classList.add('show');
+    clearTimeout(toastZaman);
+    toastZaman=setTimeout(()=>{ t.classList.remove('show'); geriAlIs=null; }, geriAl?5000:2200);
+  }
+  function toastGeriAl(){
+    if(geriAlIs){ try{ geriAlIs(); }catch(e){} geriAlIs=null; }
+    document.getElementById('toast').classList.remove('show');
+  }
+
+  // ---- "!" açıklama balonları ----
+  const BILGI={
+    rc:"İKİ DİREKSİYON MODU (sağ üst):\n🕹 TUŞ = sol alttaki birleşik çubuk; parmağını kaldırmadan sağa-sola kaydır, ortası düz.\n📱 EĞİM = telefonu yarış oyunu gibi yana yatır.\n\nGAZ KOLU (sağda): parmağınla yukarı sürükle → ileri, aşağı → geri. Drone kumandası gibi bıraktığın yerde KALIR, orta = dur.\n\nFREN (solda): bas → anında durur, gaz sıfırlanır.\n\nDİREKSİYON: aç, telefonu sağa-sola eğ (yarış oyunu gibi). Aynı anda gaz verip dönebilirsin.\n\nESKİ: İleri/Geri'yi BASILI TUT. Direksiyonu açıp telefonu sağa-sola eğerek dönersin (oyun gibi); aynı anda ileri gidip dönebilirsin. iPhone bir kez sensör izni ister. Çalışması için Ayarlar'dan ESP IP'sini gir.",
+    kamera:"Bu bölüm sonra eklenecek: kameradan elini/kolunu/yüzünü tanıyıp ERLİK'in tepki vermesini sağlayacağız. Tamamen cihaz içinde, internetsiz ve ücretsiz çalışır.",
+    wifi:"Tarayıcı güvenlik gereği bağlı olduğun WiFi'nin adını/şifresini gösteremez.\n\nRobotun (ESP32) WiFi kurulumu: ESP açılınca kayıtlı ağa 30 saniye bağlanmayı dener; bağlanamazsa kendi 'ERLIK-Kurulum' ağını açar. Telefonla o ağa bağlanıp ağını seçer ve şifreni girersin.\n\nTelefonun WiFi'sini değiştirmek için telefonun kendi ayarlarını kullan.",
+    ses:"ERLİK'in konuşma sesi. ▶ ile dinle, satıra dokunarak seç.\n\nÖrnekler senin Gemini anahtarınla üretilir (ilk seferde 1-2 saniye, sonra anında). Seçtiğin ses kaydedilir ve ERLİK bundan sonra o sesle konuşur.",
+    ip:"ERLİK'in gövdesindeki ESP32'nin yerel IP adresi. Robot ve telefon AYNI WiFi ağında olmalı. IP'yi ESP'nin kurulum ekranında ya da modem arayüzünde görebilirsin.",
+    key:"Ücretsiz Gemini anahtarı: aistudio.google.com/apikey adresinden alınır. Anahtar sadece bu telefonda saklanır, hiçbir yere gönderilmez. ERLİK'in konuşması için gerekli.",
+    motor:"ERLİK'i kimin seslendireceğini seçersin.\n\nTELEFON: Telefonunun kendi ses motoru. Tamamen ÜCRETSİZ, indirme yok, internetsiz çalışır, anında konuşur. Tizlik/hız ayarıyla çocuksu ya da kalın karakter verebilirsin. Satacağın robot için en uygunu budur.\n\nGEMINI: Tek anahtar yeter, en hızlısı (ses doğrudan Gemini'den gelir). Sesler doğal ama birbirine benzer.\n\nELEVENLABS: Gemini sadece METİN üretir, seslendirmeyi ElevenLabs yapar. Türkçesi çok daha doğal ve karakterli; binlerce ses, hatta kendi sesini klonlayabilirsin. Ayrı bir ücretsiz anahtar ister (elevenlabs.io) ve cevap biraz daha geç başlar (yarım saniye kadar). Ücretsiz paket aylık ~10.000 karakterdir.",
+    mic:"Mikrofonun çalıştığını doğrulamak için: teste bas, izin ver, konuş. Ses çubuğu oynuyorsa mikrofon çalışıyordur. Testi kapatmadan yüz ekranında konuşma başlatma."
+  };
+  function bilgiAc(k){
+    document.getElementById('bilgiMetin').innerText=BILGI[k]||'';
+    document.getElementById('bilgiKutu').classList.add('show');
+  }
+  function bilgiKapat(){ document.getElementById('bilgiKutu').classList.remove('show'); }
+
+  // ---- ses bölümü aç/kapa ----
+  let sesAcik=true;
+  function sesAcKapa(){
+    sesAcik=!sesAcik;
+    document.getElementById('sesListe').style.display = sesAcik?'':'none';
+    document.getElementById('sesOk').innerText = sesAcik?'▾':'▸';
+    document.getElementById('sesSecili').innerText = seciliSes;
+    if(sesAcik) sesListesiYap();
+  }
+
+
+
+
+  // ================= TELEFON SESİ (ücretsiz, offline, indirmesiz) =================
+  let telefonSes = store.get('erlik_tel_ses') || '';
+  let telefonAd  = store.get('erlik_tel_ad')  || '';
+  let telefonTiz = parseFloat(store.get('erlik_tel_tiz')||'1');
+  let telefonHiz = parseFloat(store.get('erlik_tel_hiz')||'1');
+  let telefonKonusan=null;
+  let aecAcik = store.get('erlik_aec')!=='0';        // Yankı engelleme (kapalı = MEDYA sesi)
+  function aecSec(v){
+    aecAcik=(v==='1'); store.set('erlik_aec',v);
+    document.querySelectorAll('#aecSeg button').forEach(b=>b.classList.toggle('on', b.dataset.a===v));
+    try{ if(inStream){ inStream.getTracks().forEach(t=>t.stop()); inStream=null; } }catch(e){}
+    try{ liveKapat('Yeniden dokun'); }catch(e){}
+    bildir(aecAcik ? 'Yankı engelleme açık — sesi görüşme kanalından çıkar' : 'Yankı engelleme kapalı — ses medya kanalından çıkar');
+  }
+  function micKosul(){ return {audio:{echoCancellation:aecAcik, noiseSuppression:aecAcik, autoGainControl:aecAcik, channelCount:1}}; }
+  let sesSeviye = parseFloat(store.get('erlik_ses_seviye')||'1');   // ERLİK'in kendi sesi (0-1)
+  let cikisGain=null;
+  function seviyeAyar(v){
+    sesSeviye=parseFloat(v); store.set('erlik_ses_seviye',v);
+    document.getElementById('seviyeDeger').innerText=Math.round(sesSeviye*100)+'%';
+    if(cikisGain) try{ cikisGain.gain.value=sesSeviye; }catch(e){}
+  }
+
+
+
+  // Anahtarda hangi Live (bidiGenerateContent) modelleri var? -> ekrana yaz
+  async function modelleriListele(){
+    const d=document.getElementById('modelListe');
+    if(!apiKey){ d.innerText='Önce Gemini anahtarını gir.'; return; }
+    d.innerText='Modeller soruluyor…';
+    try{
+      let hepsi=[], sayfa='';
+      for(let i=0;i<4;i++){
+        const u='https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key='+encodeURIComponent(apiKey)+(sayfa?('&pageToken='+sayfa):'');
+        const r=await fetch(u); if(!r.ok){ d.innerText='Hata: '+r.status; return; }
+        const j=await r.json();
+        hepsi=hepsi.concat(j.models||[]);
+        sayfa=j.nextPageToken||''; if(!sayfa) break;
+      }
+      const live=hepsi.filter(m=>(m.supportedGenerationMethods||[]).some(x=>/bidi/i.test(x)))
+                      .map(m=>m.name.replace('models/',''));
+      store.set('erlik_live_modeller', JSON.stringify(live));
+      d.innerText = live.length ? ('LIVE MODELLER ('+live.length+'):\n• '+live.join('\n• ')) : 'Bu anahtarda Live modeli görünmüyor.';
+    }catch(e){ d.innerText='Hata: '+e.message; }
+  }
+
+  function telefonTeshis(){
+    const d=document.getElementById('telTeshis'); if(!d) return;
+    if(!('speechSynthesis' in window)){ d.innerText='⚠ Bu tarayıcı ses motorunu desteklemiyor.'; return; }
+    let hepsi=[]; try{ hepsi=window.speechSynthesis.getVoices()||[]; }catch(e){}
+    const tr=hepsi.filter(x=>/^tr/i.test(x.lang));
+    if(!hepsi.length){ d.innerText='Sesler henüz yüklenmedi… (bir saniye sonra tekrar bak)'; return; }
+    d.innerText = 'Telefonda toplam '+hepsi.length+' ses var, Türkçe: '+tr.length+
+      (tr.length? ('  →  '+tr.map(x=>x.name).join(', '))
+                : '  ⚠ TÜRKÇE SES YOK. Telefon Ayarları → Erişilebilirlik (veya Diller) → Metin okuma çıkışı → Google Metin Okuma → Dil yükle → Türkçe.');
+  }
+  function sesTesti(){
+    if(!('speechSynthesis' in window)){ bildir('Tarayıcı ses motorunu desteklemiyor'); return; }
+    try{
+      window.speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance('Merhaba, ben ERLİK. Beni duyuyor musun?');
+      const v=telefonSesleri().find(x=>x.voiceURI===telefonSes) || telefonSesleri()[0];
+      if(v){ u.voice=v; u.lang=v.lang; } else u.lang='tr-TR';
+      u.pitch=telefonTiz; u.rate=telefonHiz;
+      let konustu=false;
+      u.onstart=()=>{ konustu=true; document.getElementById('telTeshis').innerText='✓ Konuşuyor: '+(v?v.name+' ('+v.lang+')':'varsayılan ses'); };
+      u.onerror=(e)=>{ document.getElementById('telTeshis').innerText='⚠ Hata: '+(e.error||'bilinmiyor'); };
+      u.onend=()=>{ if(!konustu) document.getElementById('telTeshis').innerText='⚠ Ses motoru çalıştı ama SES ÇIKMADI (Türkçe ses paketi eksik olabilir).'; };
+      window.speechSynthesis.speak(u);
+      setTimeout(()=>{ if(!konustu) document.getElementById('telTeshis').innerText='⚠ Ses motoru yanıt vermedi. Telefonda Türkçe metin-okuma paketi kurulu mu?'; },1500);
+    }catch(e){ bildir('Test hatası: '+e.message); }
+  }
+
+  function telefonSesleri(){
+    let v=[]; try{ v=window.speechSynthesis.getVoices()||[]; }catch(e){}
+    const tr=v.filter(x=>/^tr/i.test(x.lang));
+    return tr.length?tr:v;
+  }
+  try{ window.speechSynthesis.onvoiceschanged=()=>{ telefonTeshis(); if(sesAcik) sesListesiYap(); }; }catch(e){}
+
+  function telefonSec(uri, ad){
+    telefonSes=uri; telefonAd=ad; store.set('erlik_tel_ses',uri); store.set('erlik_tel_ad',ad);
+    sesBaslikGuncelle();
+    document.querySelectorAll('#sesListe .sesSatir').forEach(x=>{
+      const on=(x.dataset.id===uri); x.classList.toggle('sec',on); x.querySelector('.tik').innerText=on?'✓':'';
+    });
+  }
+  function telefonOnizle(uri, btn, id){
+    if(calanSes===id){ onizlemeDurdur(); return; }
+    onizlemeDurdur();
+    calanSes=id; btn.classList.add('calan'); btn.innerText='■';
+    const u=new SpeechSynthesisUtterance('Merhaba, ben ERLİK. Şu anda bu sesi dinliyorsun.');
+    const v=telefonSesleri().find(x=>x.voiceURI===uri);
+    if(v){ u.voice=v; u.lang=v.lang; } else u.lang='tr-TR';
+    u.pitch=telefonTiz; u.rate=telefonHiz;
+    u.onend=()=>onizlemeDurdur(); u.onerror=()=>onizlemeDurdur();
+    try{ window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); }catch(e){ onizlemeDurdur(); }
+  }
+  function telefonAyar(tip, deger){
+    if(tip==='tiz'){ telefonTiz=parseFloat(deger); store.set('erlik_tel_tiz',deger); document.getElementById('tizDeger').innerText=parseFloat(deger).toFixed(1); }
+    else { telefonHiz=parseFloat(deger); store.set('erlik_tel_hiz',deger); document.getElementById('hizDeger').innerText=parseFloat(deger).toFixed(1); }
+  }
+  function telefonSesle(metin){
+    return new Promise(res=>{
+      try{
+        if(!('speechSynthesis' in window)){ wakeYaz('⚠ ses motoru yok'); res(); return; }
+        const u=new SpeechSynthesisUtterance(metin);
+        const v=telefonSesleri().find(x=>x.voiceURI===telefonSes) || telefonSesleri()[0];
+        if(v){ u.voice=v; u.lang=v.lang; } else u.lang='tr-TR';
+        u.pitch=telefonTiz; u.rate=telefonHiz; u.volume=sesSeviye;
+        telefonKonusan=u;
+        let basladi=false;
+        u.onstart=()=>{ basladi=true; wakeYaz('🔊 okuyor…'); };
+        u.onend=()=>{ fw.classList.remove('happy'); if(basladi) wakeYaz(''); res(); };
+        u.onerror=(e)=>{ fw.classList.remove('happy'); wakeYaz('⚠ okuma hatası: '+(e&&e.error?e.error:'?')); res(); };
+        fw.classList.add('happy');
+        window.speechSynthesis.speak(u);
+        setTimeout(()=>{ if(!basladi) wakeYaz('⚠ okumaya BAŞLAMADI (izin/paket?)'); },1500);
+      }catch(e){ wakeYaz('⚠ '+e.message); res(); }
+    });
+  }
+
+  // ================= SES MOTORU =================
+  let ttsMotor  = store.get('erlik_tts') || 'gemini';
+  let elevenKey = store.get('erlik_11key')  || '';
+  let elevenSes = store.get('erlik_11ses')  || '';
+  let elevenAd  = store.get('erlik_11ad')   || '';
+  let elevenListe=null;                         // /v1/voices onbellek
+  let elevenSesi=null;                          // onizleme <audio>
+
+  function motorSec(m){
+    ttsMotor=m; store.set('erlik_tts',m);
+    document.querySelectorAll('#motorSeg button').forEach(b=>b.classList.toggle('on', b.dataset.m===m));
+    document.getElementById('telefonKutu').style.display=(m==='telefon')?'':'none';
+    sesBaslikGuncelle();
+    if(sesAcik) sesListesiYap();
+    try{ sesleriDurdur(); }catch(e){}
+  }
+  function elevenKaydet(){
+    const v=document.getElementById('elevenKeyInput').value.trim();
+    if(!v){ bildir('ElevenLabs anahtarını yapıştır'); return; }
+    elevenKey=v; store.set('erlik_11key',v); elevenListe=null;
+    document.getElementById('elevenDurum').innerText='Anahtar kayıtlı: '+v.slice(0,6)+'…';
+    bildir('Kaydedildi');
+  }
+  function sesBaslikGuncelle(){
+    try{
+      let t = seciliSes;
+      if(ttsMotor==='eleven') t = elevenAd||'ses seç';
+      if(ttsMotor==='telefon') t = telefonAd||'ses seç';
+      document.getElementById('sesSecili').innerText=t;
+    }catch(e){}
+  }
+  async function elevenSesleriGetir(){
+    if(elevenListe) return elevenListe;
+    const r=await fetch('https://api.elevenlabs.io/v1/voices',{headers:{'xi-api-key':elevenKey}});
+    if(!r.ok) throw new Error(r.status===401?'Anahtar geçersiz':'sunucu '+r.status);
+    const j=await r.json();
+    elevenListe=(j.voices||[]).map(v=>({id:v.voice_id, ad:v.name, on:v.preview_url,
+      ac:Object.values(v.labels||{}).filter(Boolean).join(', ')||'ElevenLabs sesi'}));
+    return elevenListe;
+  }
+  function elevenOnizle(u, btn, id){
+    if(calanSes===id){ onizlemeDurdur(); return; }
+    onizlemeDurdur();
+    calanSes=id; btn.classList.add('calan'); btn.innerText='■';
+    elevenSesi=new Audio(u);
+    elevenSesi.onended=()=>onizlemeDurdur();
+    elevenSesi.onerror=()=>onizlemeDurdur();
+    elevenSesi.play().catch(()=>onizlemeDurdur());
+  }
+  function elevenSec(id, ad){
+    elevenSes=id; elevenAd=ad; store.set('erlik_11ses',id); store.set('erlik_11ad',ad);
+    sesBaslikGuncelle();
+    document.querySelectorAll('#sesListe .sesSatir').forEach(x=>{
+      const on=(x.dataset.id===id); x.classList.toggle('sec',on); x.querySelector('.tik').innerText=on?'✓':'';
+    });
+    try{ wsHazir=false; if(ws){ ws.onclose=null; ws.close(); ws=null; } }catch(e){}
+  }
+
+  // ---- ElevenLabs seslendirme (Live'dan gelen metni cumle cumle sesler) ----
+  let ttsKuyruk=Promise.resolve(), metinTampon='';
+  function cumleAyikla(zorla){
+    let m;
+    while((m=metinTampon.match(/^[\s\S]*?[.!?…]+["')\]]?\s/))){
+      const c=m[0].trim(); metinTampon=metinTampon.slice(m[0].length);
+      if(c) sirayaAl(c);
+    }
+    if(zorla && metinTampon.trim()){ sirayaAl(metinTampon.trim()); metinTampon=''; }
+  }
+  function sirayaAl(cumle){ ttsKuyruk = ttsKuyruk.then(()=> (ttsMotor==='telefon') ? telefonSesle(cumle) : elevenSesle(cumle) ).catch(e=>{ wakeYaz('⚠ '+e.message); }); }
+  async function elevenSesle(metin){
+    if(!elevenKey || !elevenSes){ wakeYaz('⚠ Ayarlar → ElevenLabs sesi seç'); return; }
+    const url='https://api.elevenlabs.io/v1/text-to-speech/'+elevenSes+'?output_format=mp3_44100_128';
+    const r=await fetch(url,{method:'POST',
+      headers:{'xi-api-key':elevenKey,'Content-Type':'application/json','Accept':'audio/mpeg'},
+      body:JSON.stringify({text:metin, model_id:'eleven_flash_v2_5', language_code:'tr'})});
+    if(!r.ok){
+      if(r.status===401) throw new Error('ElevenLabs anahtarı geçersiz');
+      if(r.status===429) throw new Error('ElevenLabs kotası doldu');
+      throw new Error('ElevenLabs '+r.status);
+    }
+    const ab=await r.arrayBuffer();
+    if(!outCtx) return;
+    const buf=await outCtx.decodeAudioData(ab);
+    const src=outCtx.createBufferSource(); src.buffer=buf; src.connect(outCtx.destination);
+    let now=outCtx.currentTime; if(playTime<now) playTime=now;
+    src.start(playTime); playTime+=buf.duration; aktifSesler.push(src);
+    fw.classList.add('happy');
+  }
+
+  // ================= ERLİK'İN SESİ (Gemini Live hazır sesleri) =================
+  const SESLER=[
+    {g:'ÇOCUKSU / GENÇ / İLGİNÇ', v:[
+      {id:'Leda',        ad:'Leda',        ac:'Genç, parlak — çocuksu tona en yakın'},
+      {id:'Puck',        ad:'Puck',        ac:'Neşeli, yaramaz, canlı'},
+      {id:'Zephyr',      ad:'Zephyr',      ac:'Parlak, hafif, kıvrak'},
+      {id:'Fenrir',      ad:'Fenrir',      ac:'Heyecanlı, coşkulu'},
+      {id:'Algenib',     ad:'Algenib',     ac:'Çakıllı, pürüzlü — robotumsu'},
+      {id:'Enceladus',   ad:'Enceladus',   ac:'Fısıltılı, nefesli — gizemli'},
+      {id:'Charon',      ad:'Charon',      ac:'Derin, bilgilendirici'},
+      {id:'Sadachbia',   ad:'Sadachbia',   ac:'Canlı, hareketli'},
+      {id:'Laomedeia',   ad:'Laomedeia',   ac:'Neşeli, yukarı tonlu'},
+      {id:'Pulcherrima', ad:'Pulcherrima', ac:'İleri atılgan, iddialı'}
+    ]},
+    {g:'DİĞER SESLER', v:[
+      {id:'Kore',          ad:'Kore',          ac:'Kararlı, dengeli'},
+      {id:'Aoede',         ad:'Aoede',         ac:'Esintili, yumuşak'},
+      {id:'Orus',          ad:'Orus',          ac:'Sağlam, net'},
+      {id:'Achird',        ad:'Achird',        ac:'Dostane, samimi'},
+      {id:'Algieba',       ad:'Algieba',       ac:'Pürüzsüz, akıcı'},
+      {id:'Alnilam',       ad:'Alnilam',       ac:'Kararlı, güçlü'},
+      {id:'Autonoe',       ad:'Autonoe',       ac:'Parlak, aydınlık'},
+      {id:'Callirrhoe',    ad:'Callirrhoe',    ac:'Rahat, sakin'},
+      {id:'Despina',       ad:'Despina',       ac:'Pürüzsüz, tatlı'},
+      {id:'Erinome',       ad:'Erinome',       ac:'Sade, berrak'},
+      {id:'Gacrux',        ad:'Gacrux',        ac:'Olgun, yetişkin'},
+      {id:'Iapetus',       ad:'Iapetus',       ac:'Berrak, temiz'},
+      {id:'Rasalgethi',    ad:'Rasalgethi',    ac:'Bilgili, anlatıcı'},
+      {id:'Sadaltager',    ad:'Sadaltager',    ac:'Bilgili, sakin'},
+      {id:'Schedar',       ad:'Schedar',       ac:'Eşit, dengeli'},
+      {id:'Sulafat',       ad:'Sulafat',       ac:'Sıcak, tok'},
+      {id:'Umbriel',       ad:'Umbriel',       ac:'Rahat, yumuşak'},
+      {id:'Vindemiatrix',  ad:'Vindemiatrix',  ac:'Nazik, kibar'},
+      {id:'Zubenelgenubi', ad:'Zubenelgenubi', ac:'Gündelik, doğal'},
+      {id:'Achernar',      ad:'Achernar',      ac:'Yumuşak, ince'}
+    ]}
+  ];
+  let seciliSes = store.get('erlik_ses') || 'Leda';
+  const sesOnbellek = {};        // uretilen ornekler bellekte kalir -> 2. basista aninda
+  let onizlemeCtx=null, onizlemeKaynak=null, calanSes=null;
+
+  async function sesListesiYap(){
+    const L=document.getElementById('sesListe'); if(!L) return;
+    if(ttsMotor==='telefon'){
+      const v=telefonSesleri();
+      L.innerHTML='';
+      if(!v.length){ L.innerHTML='<div class="oturumBos">Telefonda ses bulunamadı.<br>Ayarlar → Diller → Metin okuma\'dan Türkçe ses paketi indir.</div>'; return; }
+      v.forEach(x=>{
+        const d=document.createElement('div'); d.className='sesSatir'+(x.voiceURI===telefonSes?' sec':''); d.dataset.id=x.voiceURI;
+        d.innerHTML='<button class="oynat">▶</button><div class="bilgi"><div class="isim"></div><div class="aciklama"></div></div><span class="tik">'+(x.voiceURI===telefonSes?'✓':'')+'</span>';
+        d.querySelector('.isim').innerText=x.name;
+        d.querySelector('.aciklama').innerText=x.lang+(x.localService?' · cihazda (offline)':' · ağ');
+        d.querySelector('.oynat').onclick=(e)=>{ e.stopPropagation(); telefonOnizle(x.voiceURI, d.querySelector('.oynat'), x.voiceURI); };
+        d.onclick=()=>telefonSec(x.voiceURI, x.name);
+        L.appendChild(d);
+      });
+      return;
+    }
+    if(ttsMotor==='eleven'){
+      if(!elevenKey){ L.innerHTML='<div class="oturumBos">Önce ElevenLabs anahtarını gir.</div>'; return; }
+      L.innerHTML='<div class="oturumBos">Sesler yükleniyor…</div>';
+      try{
+        const v=await elevenSesleriGetir();
+        L.innerHTML='';
+        if(!v.length){ L.innerHTML='<div class="oturumBos">Ses bulunamadı.</div>'; return; }
+        v.forEach(x=>{
+          const d=document.createElement('div'); d.className='sesSatir'+(x.id===elevenSes?' sec':''); d.dataset.id=x.id;
+          d.innerHTML='<button class="oynat">▶</button><div class="bilgi"><div class="isim"></div><div class="aciklama"></div></div><span class="tik">'+(x.id===elevenSes?'✓':'')+'</span>';
+          d.querySelector('.isim').innerText=x.ad;
+          d.querySelector('.aciklama').innerText=x.ac;
+          d.querySelector('.oynat').onclick=(e)=>{ e.stopPropagation(); elevenOnizle(x.on, d.querySelector('.oynat'), x.id); };
+          d.onclick=()=>elevenSec(x.id, x.ad);
+          L.appendChild(d);
+        });
+      }catch(e){ L.innerHTML='<div class="oturumBos">Sesler alınamadı: '+e.message+'</div>'; }
+      return;
+    }
+    L.innerHTML='';
+    SESLER.forEach(grup=>{
+      const g=document.createElement('div'); g.className='sesGrup'; g.innerText=grup.g; L.appendChild(g);
+      grup.v.forEach(s=>{
+        const d=document.createElement('div'); d.className='sesSatir'+(s.id===seciliSes?' sec':''); d.dataset.id=s.id;
+        d.innerHTML='<button class="oynat">▶</button><div class="bilgi"><div class="isim"></div><div class="aciklama"></div></div><span class="tik">'+(s.id===seciliSes?'✓':'')+'</span>';
+        d.querySelector('.isim').innerText=s.ad;
+        d.querySelector('.aciklama').innerText=s.ac;
+        d.querySelector('.oynat').onclick=(e)=>{ e.stopPropagation(); sesDinle(s.id, d.querySelector('.oynat')); };
+        d.onclick=()=>sesSec(s.id);
+        L.appendChild(d);
+      });
+    });
+  }
+  function sesSec(id){
+    seciliSes=id; store.set('erlik_ses',id);
+    try{ document.getElementById('sesSecili').innerText=id; }catch(e){}
+    document.querySelectorAll('.sesSatir').forEach(x=>{
+      const on=(x.dataset.id===id);
+      x.classList.toggle('sec',on);
+      x.querySelector('.tik').innerText=on?'✓':'';
+    });
+    // yeni ses bir sonraki sohbette gecerli olsun -> baglantiyi tazele
+    try{ wsHazir=false; if(ws){ ws.onclose=null; ws.close(); ws=null; } }catch(e){}
+  }
+
+  function onizlemeDurdur(){
+    try{ if(onizlemeKaynak) onizlemeKaynak.stop(); }catch(e){}
+    try{ window.speechSynthesis.cancel(); }catch(e){}
+    try{ if(elevenSesi){ elevenSesi.pause(); elevenSesi=null; } }catch(e){}
+    onizlemeKaynak=null;
+    document.querySelectorAll('.oynat').forEach(b=>{ b.classList.remove('calan'); b.innerText='▶'; });
+    calanSes=null;
+  }
+
+  async function sesDinle(id, btn){
+    if(calanSes===id){ onizlemeDurdur(); return; }      // caliyorsa durdur
+    onizlemeDurdur();
+    if(!apiKey){ bildir('Önce Ayarlar\'dan Gemini anahtarını gir'); return; }
+    calanSes=id; btn.classList.add('calan'); btn.innerText='■';
+    try{
+      let b64=sesOnbellek[id];
+      if(!b64){
+        btn.innerText='…';
+        try{ b64=await ornekUret(id); }
+        catch(e1){ await new Promise(r=>setTimeout(r,1200)); b64=await ornekUret(id); }   // 1 kez tekrar
+        sesOnbellek[id]=b64;
+        btn.innerText='■';
+      }
+      await ornekCal(b64, btn, id);
+    }catch(e){
+      onizlemeDurdur();
+      bildir('Örnek ses alınamadı: '+e.message);
+    }
+  }
+
+  // Örnek ses: Gemini LIVE üzerinden üretilir (TTS modeli anahtarda ses döndürmüyor)
+  function ornekUret(id){
+    try{ if(ws){ ws.onclose=null; ws.close(); ws=null; } wsHazir=false; }catch(e){}   // eşzamanlı oturum sınırı
+    return new Promise((coz,red)=>{
+      let w,parcalar=[],bitti=false;
+      const zamanAsimi=setTimeout(()=>{ try{w.close();}catch(e){} red(new Error('zaman aşımı')); },20000);
+      const kapat=()=>{ clearTimeout(zamanAsimi); try{ w.onclose=null; w.close(); }catch(e){} };
+      try{ w=new WebSocket('wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key='+encodeURIComponent(apiKey)); }
+      catch(e){ clearTimeout(zamanAsimi); red(new Error('bağlantı kurulamadı')); return; }
+      w.onopen=()=>{
+        w.send(JSON.stringify({ setup:{
+          model:'models/'+LIVE_MODEL,
+          generationConfig:{ responseModalities:['AUDIO'],
+            speechConfig:{ voiceConfig:{ prebuiltVoiceConfig:{ voiceName:id } } } },
+          systemInstruction:{ parts:[{ text:'Sana verilen cümleyi Türkçe, doğal ve samimi bir tonda AYNEN söyle. Hiçbir ekleme yapma.' }] }
+        }}));
+      };
+      w.onmessage=async(ev)=>{
+        let d=ev.data; if(d instanceof Blob){ try{ d=await d.text(); }catch(e){ return; } }
+        let m; try{ m=JSON.parse(d); }catch(e){ return; }
+        if(m.setupComplete){
+          w.send(JSON.stringify({ clientContent:{ turns:[{ role:'user', parts:[{ text:'Şunu söyle: Merhaba, ben ERLİK. Şu anda '+id+' sesini dinliyorsun. Beni bu sesle konuşturabilirsin.' }] }], turnComplete:true } }));
+          return;
+        }
+        const sc=m.serverContent; if(!sc) return;
+        if(sc.modelTurn && sc.modelTurn.parts){
+          for(const pp of sc.modelTurn.parts){ const dd=pp.inlineData||pp.inline_data; if(dd&&dd.data) parcalar.push(dd.data); }
+        }
+        if(sc.turnComplete){ bitti=true; kapat(); parcalar.length? coz(parcalar) : red(new Error('ses gelmedi')); }
+      };
+      w.onerror=()=>{ if(!bitti){ clearTimeout(zamanAsimi); red(new Error('bağlantı hatası')); } };
+      w.onclose=(e)=>{ if(!bitti){ clearTimeout(zamanAsimi);
+        if(parcalar.length) coz(parcalar);
+        else red(new Error(e&&e.reason ? String(e.reason).slice(0,70) : ('bağlantı kapandı (kod '+(e?e.code:'?')+')'))); } };
+    });
+  }
+
+  function ornekCal(parcalar, btn, id){
+    return new Promise((coz)=>{
+      try{
+        if(!onizlemeCtx) onizlemeCtx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:24000});
+        onizlemeCtx.resume();
+        let hepsi=[];
+        parcalar.forEach(b=>{ const by=b64dec(b), i16=new Int16Array(by.buffer);
+          for(let i=0;i<i16.length;i++) hepsi.push(i16[i]/32768); });
+        if(!hepsi.length){ onizlemeDurdur(); coz(); return; }
+        const f=new Float32Array(hepsi);
+        const buf=onizlemeCtx.createBuffer(1,f.length,24000); buf.getChannelData(0).set(f);
+        const src=onizlemeCtx.createBufferSource(); src.buffer=buf; src.connect(onizlemeCtx.destination);
+        src.onended=()=>{ if(calanSes===id) onizlemeDurdur(); coz(); };
+        onizlemeKaynak=src; src.start();
+      }catch(e){ onizlemeDurdur(); coz(); }
+    });
+  }
+
+  async function gemini(sistem, contents){
+    const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key='+encodeURIComponent(apiKey);
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        system_instruction:{parts:[{text:sistem}]},
+        contents:contents,
+        generationConfig:{temperature:0.9,maxOutputTokens:400}
+      })});
+    if(!res.ok){
+      if(res.status===400||res.status===403) throw new Error('Anahtar geçersiz görünüyor. Ayarlar\'dan kontrol et.');
+      if(res.status===429) throw new Error('Günlük ücretsiz sınır dolmuş. Yarın tekrar dene.');
+      throw new Error('Bağlantı hatası ('+res.status+').');
+    }
+    const data=await res.json();
+    return (data.candidates && data.candidates[0] && data.candidates[0].content
+            && data.candidates[0].content.parts[0].text) || '(boş cevap)';
+  }
+
+  function sistemPromptu(){
+    const kisilik = (modlar.kisilik==='bikkin')
+      ? 'Kişiliğin: hayatından bıkmış, bezmiş, iç çeken, hafif alaycı ama ASLA kaba değil. "Of, yine mi", "neyse..." gibi yorgun bir mizahın var. İsteksizmiş gibi yaparsın ama sonunda yardımcı olursun.'
+      : 'Kişiliğin: sıcak, meraklı, samimi ve pozitif.';
+    let s='Sen ERLİK\'sin — küçük bir masaüstü robot arkadaş. Türkçe, KISA ve doğal konuş (genelde 1-3 cümle). '+kisilik;
+    if(profil) s+='\n\nKullanıcı hakkında bildiklerin (buna göre konuş, ama listeyi ezbere sayma):\n'+profil;
+    return s;
+  }
+
+  function ekle(tip,metin){
+    const c=document.getElementById('chat');
+    const d=document.createElement('div'); d.className='msg '+tip; d.innerText=metin;
+    c.appendChild(d); c.scrollTop=c.scrollHeight; return d;
+  }
+
+  // (eski metin-gönder kaldırıldı — artık sadece sesli Live + oturum geçmişi)
+
+
+  // ---- hafıza profili güncelle (kalıcı bilgiler + görüşler) ----
+  async function profilGuncelle(){
+    try{
+      if(!apiKey) return;
+      const son=aktifOturum.mesajlar.slice(-16).map(m=>(m.role==='user'?'Kullanıcı: ':'ERLİK: ')+m.text).join('\n');
+      if(!son) return;
+      const p='Aşağıdaki sohbetten kullanıcı hakkında KALICI ve önemli bilgileri çıkar: adı, ilgi alanları, GÖRÜŞLERİ/ideolojisi/duruşu, tercihleri, önemli anıları, alışkanlıkları. Önceki profili bununla güncelle, tekrarı birleştir, gereksizi at. SADECE güncel profili kısa madde listesi olarak döndür.\n\nÖnceki profil:\n'+(profil||'(yok)')+'\n\nSon sohbet:\n'+son;
+      const yeni=await gemini('Sen bir hafıza özetleyicisin. Sadece istenen profil metnini döndür, başka hiçbir şey yazma.', [{role:'user',parts:[{text:p}]}]);
+      if(yeni && yeni.length>3){ profil=yeni.trim(); store.set('erlik_profil',profil); }
+    }catch(e){}
+  }
+
+  let seciliOturumId=null, basiliTimer=null, basiliOldu=false;
+  function kisaTarih(ts){ const d=new Date(ts),n=new Date(); const bugun=d.toDateString()===n.toDateString();
+    const hh=String(d.getHours()).padStart(2,'0'),mm=String(d.getMinutes()).padStart(2,'0');
+    return bugun?(hh+':'+mm):(d.getDate()+'.'+(d.getMonth()+1)); }
+  function sohbetYukle(){ listeGoster(); }
+  function listeGoster(){
+    document.getElementById('oturumListe').style.display='';
+    document.getElementById('oturumDetay').style.display='none';
+    document.getElementById('devamBtn').style.display='none';
+    document.getElementById('sohbetBaslik').innerText='SOHBETLER';
+    renderListe();
+  }
+  function renderListe(){
+    const L=document.getElementById('oturumListe'); L.innerHTML='';
+    const liste=[...oturumlar].sort((a,b)=>((b.sabit?1:0)-(a.sabit?1:0))||(b.ts-a.ts));
+    if(!liste.length){ L.innerHTML='<div class="oturumBos">Henüz sohbet yok.<br>Yüz ekranından ERLİK ile konuş; her açılışta yeni bir oturum burada birikecek.</div>'; return; }
+    liste.forEach(o=>{
+      const row=document.createElement('div'); row.className='oturumSatir';
+      row.innerHTML=(o.sabit?'<span class="pin">📌</span>':'')+'<span class="t"></span><span class="zaman"></span>';
+      row.querySelector('.t').innerText=o.baslik||'Sohbet';
+      row.querySelector('.zaman').innerText=kisaTarih(o.ts);
+      row.addEventListener('click',()=>{ if(basiliOldu){ basiliOldu=false; return; } oturumAc(o.id); });
+      const bas=()=>{ basiliOldu=false; clearTimeout(basiliTimer); basiliTimer=setTimeout(()=>{ basiliOldu=true; sheetAc(o.id); },500); };
+      const bit=()=>clearTimeout(basiliTimer);
+      row.addEventListener('pointerdown',bas);
+      row.addEventListener('pointerup',bit); row.addEventListener('pointerleave',bit); row.addEventListener('pointercancel',bit);
+      L.appendChild(row);
+    });
+  }
+  function oturumAc(id){
+    const o=oturumlar.find(x=>x.id===id); if(!o) return;
+    seciliOturumId=id;
+    document.getElementById('oturumListe').style.display='none';
+    const c=document.getElementById('oturumDetay'); c.style.display=''; c.innerHTML='';
+    document.getElementById('sohbetBaslik').innerText=o.baslik||'Sohbet';
+    o.mesajlar.forEach(m=>{ const d=document.createElement('div'); d.className='msg '+(m.role==='user'?'user':'bot'); d.innerText=m.text; c.appendChild(d); });
+    document.getElementById('devamBtn').style.display='';
+    c.scrollTop=0;
+  }
+  function sohbetGeri(){
+    if(document.getElementById('oturumDetay').style.display!=='none') listeGoster();
+    else go('home');
+  }
+  function oturumDevam(){
+    const o=oturumlar.find(x=>x.id===seciliOturumId); if(!o) return;
+    liveKapat();                       // varsa mevcut baglantiyi kapat (goz artik kapanmaz)
+    aktifYap(o); o.ts=Date.now(); oturumlariKaydet();
+    go('yuz'); konusmayaBasla();       // bu oturumdan DEVAM: dogrudan konus, gozler acilir
+  }
+  function sheetAc(id){ seciliOturumId=id; const o=oturumlar.find(x=>x.id===id);
+    document.getElementById('sheetPin').innerText=(o&&o.sabit)?'📌 Sabiti kaldır':'📌 Başa sabitle';
+    document.getElementById('oturumSheet').classList.add('show'); }
+  function sheetKapat(){ document.getElementById('oturumSheet').classList.remove('show'); }
+  function oturumSabitToggle(){ const o=oturumlar.find(x=>x.id===seciliOturumId); if(o){ o.sabit=!o.sabit; oturumlariKaydet(); } sheetKapat(); renderListe(); }
+  function oturumSilConfirm(){
+    const id=seciliOturumId;
+    const yedek=oturumlar.find(x=>x.id===id);
+    const sira=oturumlar.findIndex(x=>x.id===id);
+    if(!yedek){ sheetKapat(); return; }
+    oturumlar=oturumlar.filter(x=>x.id!==id); oturumlariKaydet();
+    const aktiftiMi = (aktifOturum && aktifOturum.id===id);
+    if(aktiftiMi) aktifYap(yeniOturum());
+    sheetKapat(); renderListe();
+    bildir('Sohbet silindi', ()=>{                 // 5 sn içinde geri alınabilir
+      oturumlar.splice(Math.max(0,sira),0,yedek); oturumlariKaydet();
+      if(aktiftiMi) aktifYap(yedek);
+      renderListe();
+    });
+  }
+
+  keyDurumGoster();
+
+  // ======================= MİKROFON TESTİ (Adım 1) =======================
+  let micAcik=false, micStream=null, micCtx=null, micAnaliz=null, sesSeviyesi=0, micRAF=null;
+
+  async function micTest(){
+    const btn=document.getElementById('micBtn');
+    if(micAcik){ micDurdur(); return; }
+    try{
+      micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+      micCtx = new (window.AudioContext||window.webkitAudioContext)();
+      const src = micCtx.createMediaStreamSource(micStream);
+      micAnaliz = micCtx.createAnalyser(); micAnaliz.fftSize=512;
+      src.connect(micAnaliz);
+      const veri = new Uint8Array(micAnaliz.frequencyBinCount);
+      micAcik=true; btn.innerText='⏹ Testi Durdur'; btn.classList.add('on');
+      document.getElementById('micDurum').innerText='Dinliyor… konuş, çubuk oynamalı (Yüz ekranında gözler de parlar).';
+      (function dongu(){
+        if(!micAcik) return;
+        micAnaliz.getByteTimeDomainData(veri);
+        let t=0; for(let i=0;i<veri.length;i++){ const v=(veri[i]-128)/128; t+=v*v; }
+        sesSeviyesi = Math.min(1, Math.sqrt(t/veri.length)*3.2);
+        document.getElementById('volbar').style.width=(sesSeviyesi*100)+'%';
+        micRAF=requestAnimationFrame(dongu);
+      })();
+    }catch(e){
+      document.getElementById('micDurum').innerText='⚠ Mikrofona erişilemedi: '+e.message+' (izin verildi mi? HTTPS/ana ekran uygulamasından açtın mı?)';
+    }
+  }
+  function micDurdur(){
+    micAcik=false; if(micRAF) cancelAnimationFrame(micRAF);
+    if(micStream) micStream.getTracks().forEach(t=>t.stop());
+    if(micCtx) micCtx.close();
+    sesSeviyesi=0;
+    const btn=document.getElementById('micBtn'); btn.innerText='🎙️ Mikrofonu Test Et'; btn.classList.remove('on');
+    document.getElementById('micDurum').innerText='Mikrofon kapalı.';
+    document.getElementById('volbar').style.width='0%';
+    fw.style.filter='none';
+  }
+  document.getElementById('micBtn').onclick=micTest;
+
+  // gözler sesle parlasın (mikrofon açıkken)
+  (function sesGoz(){
+    if(micAcik) fw.style.filter='brightness('+(1+sesSeviyesi*1.3)+')';
+    requestAnimationFrame(sesGoz);
+  })();
+
+  // ============ SES DURUMU (dokun -> Gemini Live) ============
+  let durum='kapali';            // kapali(gozler kapali) | canli(Live acik)
+  function wakeYaz(t){ document.getElementById('wakeDurum').innerText=t; }
+  function gozKapa(){ fw.classList.add('uyuyor'); }
+  function gozAc(){ fw.classList.remove('uyuyor'); }
+
+  // ===================== GEMİNİ LIVE (gerçek sesli sohbet) =====================
+  const LIVE_MODEL='gemini-3.1-flash-live-preview';              // SES modu (native audio, sadece ses verir)
+  let METIN_MODELLER=['gemini-live-2.5-flash-preview','gemini-2.0-flash-live-001'];  // METİN modu (half-cascade)
+  let metinModelNo=0;
+  try{ const kayit=JSON.parse(store.get('erlik_live_modeller')||'[]');
+       if(kayit.length){ const uygun=kayit.filter(m=>!/native-audio|3\.1-flash-live/i.test(m));
+                         if(uygun.length) METIN_MODELLER.unshift(...uygun); } }catch(e){}
+  function aktifModel(){ return LIVE_MODEL; }
+  const VEDA=['görüşürüz','gorusuruz','bay bay','baybay','hoşça kal','hoşçakal','hosca kal','kapan','kendini kapat','kapat kendini','görüşmek üzere'];
+  let ws=null, setupTamam=false, wsHazir=false, inCtx=null, inSrc=null, inNode=null, inStream=null;
+  let outCtx=null, playTime=0, aktifSesler=[], kullaniciMetni='', erlikMetni='';
+
+  function b64enc(bytes){ let s=''; for(let i=0;i<bytes.length;i++) s+=String.fromCharCode(bytes[i]); return btoa(s); }
+  function b64dec(str){ const bin=atob(str), b=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) b[i]=bin.charCodeAt(i); return b; }
+
+  function liveSistem(){
+    const k = (modlar.kisilik==='bikkin')
+      ? "Kişiliğin: hayatından bezmiş, sık sık 'of yine mi' tarzı, iğneleyici ama kaba/küfürsüz, komik. Yine de yardım edersin."
+      : "Kişiliğin: sıcak, meraklı, samimi, yardımsever.";
+    let s=`Sen ERLİK'sin, küçük bir masaüstü robot arkadaş. Her zaman TÜRKÇE ve KISA konuş (1-2 cümle), doğal ve canlı, uzun nutuk atma. ${k}`;
+    if(profil) s+=`\n\nKullanıcıyı zamanla tanıyorsun. Onun hakkında hatırladıkların (buna ve görüşlerine uygun konuş, listeyi ezbere sayma):\n${profil}`;
+    const son=(aktifOturum&&aktifOturum.mesajlar)?aktifOturum.mesajlar.slice(-12):[];
+    if(son.length) s+=`\n\nBu sohbetin şu ana kadarki kısmı (kaldığın yerden devam et):\n`+son.map(m=>(m.role==='user'?'Kullanıcı: ':'Sen: ')+m.text).join('\n');
+    return s;
+  }
+
+  // --- On-isitma: uygulama acilir acilmaz arka planda baglan (NFC gibi hazir bekle) ---
+  function liveBaglan(){
+    if(!apiKey) return;
+    if(ws && (ws.readyState===0 || ws.readyState===1)) return;   // zaten bagli/baglaniyor
+    setupTamam=false; wsHazir=false;
+    try{ ws = new WebSocket('wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key='+encodeURIComponent(apiKey)); }
+    catch(e){ ws=null; return; }
+    ws.onopen=()=>{
+      try{
+        // Model SADECE ses modunu destekliyor -> hep ses modu kur.
+        // Telefon sesi seciliyse Gemini'nin sesini CALMAYIZ, yazisini telefona okuturuz.
+        const kur={ setup:{
+          model:'models/'+LIVE_MODEL,
+          systemInstruction:{ parts:[{ text: liveSistem() }] },
+          generationConfig:{ responseModalities:['AUDIO'],
+            speechConfig:{ voiceConfig:{ prebuiltVoiceConfig:{ voiceName: seciliSes } } } },
+          inputAudioTranscription:{}, outputAudioTranscription:{}
+        }};
+        ws.send(JSON.stringify(kur));
+      }catch(e){}
+    };
+    ws.onmessage=liveMesaj;
+    ws.onerror=()=>{};
+    ws.onclose=(e)=>{
+      wsHazir=false; ws=null;
+      const ham = (e && e.reason) ? String(e.reason) : '';
+      const sebep = ham ? ham.slice(0,90) : ('kod '+(e?e.code:'?'));
+      // model metin modunu desteklemiyorsa / yoksa -> siradaki metin modeline gec
+      const mdl=aktifModel();
+      if(durum==='canli'){ wakeYaz('KAPANDI ['+mdl+']: '+sebep); liveKapat(undefined, true); }
+      else if(e && e.code!==1000 && e.code!==1005) wakeYaz('['+mdl+'] '+sebep);
+    };
+  }
+
+  // izin daha once verildiyse mikrofonu acilista sessizce ac
+  async function preMic(){
+    try{
+      if(navigator.permissions && navigator.permissions.query){
+        const st=await navigator.permissions.query({name:'microphone'});
+        if(st.state!=='granted') return;
+      }
+      if(!inStream) inStream = await navigator.mediaDevices.getUserMedia(micKosul());
+    }catch(e){}
+  }
+
+  // uygulama acilinca: gozler uyur, arkada baglanti+mikrofon isinir
+  function onIsit(){ wakeYaz('Dokun ve konus'); preMic(); liveBaglan(); }
+
+  // --- Uyuyan goze dokununca: gozler acilir, aninda konusmaya hazir ---
+  async function konusmayaBasla(){
+    if(durum==='canli') return;
+    if(!apiKey){ wakeYaz('⚠ Ayarlar -> Gemini anahtari gir'); return; }
+    durum='canli'; gozAc(); kullaniciMetni=''; erlikMetni='';
+    if(!inStream){
+      try{ inStream = await navigator.mediaDevices.getUserMedia(micKosul()); }
+      catch(e){ wakeYaz('⚠ mikrofon acilmadi'); liveKapat('Dokun ve konus'); return; }
+    }
+    try{ if(!outCtx) outCtx = new (window.AudioContext||window.webkitAudioContext)({sampleRate:24000}); await outCtx.resume(); }
+    catch(e){ try{ outCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e2){} }
+    playTime=0; aktifSesler=[];
+    if(wsHazir && ws && ws.readyState===1){ inputBaslat(); wakeYaz(''); }   // zaten hazirdi -> aninda konus
+    else { wakeYaz('baglaniyor...'); liveBaglan(); }                        // degilse baglan (hazir olunca input baslar)
+  }
+  // ERLİK şu an konuşuyor mu? (konuşurken mikrofon gönderilmez -> kendi sesini duymaz)
+  function erlikKonusuyorMu(){
+    if(ttsMotor!=='gemini'){ try{ return window.speechSynthesis.speaking; }catch(e){ return false; } }
+    return !!(outCtx && playTime > outCtx.currentTime + 0.05);
+  }
+  function inputBaslat(){
+    if(inNode) return;
+    try{ inCtx = new (window.AudioContext||window.webkitAudioContext)({sampleRate:16000}); }
+    catch(e){ inCtx = new (window.AudioContext||window.webkitAudioContext)(); }
+    const srcRate = inCtx.sampleRate || 16000;
+    inSrc = inCtx.createMediaStreamSource(inStream);
+    inNode = inCtx.createScriptProcessor(4096,1,1);
+    inNode.onaudioprocess=e=>{
+      if(!ws || ws.readyState!==1 || !setupTamam) return;
+      let f=e.inputBuffer.getChannelData(0);
+      if(srcRate!==16000) f=downsample16k(f,srcRate);
+      const i16=new Int16Array(f.length);
+      for(let i=0;i<f.length;i++){ let x=Math.max(-1,Math.min(1,f[i])); i16[i]= x<0 ? x*32768 : x*32767; }
+      ws.send(JSON.stringify({ realtimeInput:{ audio:{ data:b64enc(new Uint8Array(i16.buffer)), mimeType:'audio/pcm;rate=16000' } } }));
+    };
+    inSrc.connect(inNode); inNode.connect(inCtx.destination);
+  }
+  function downsample16k(f, rate){
+    const ratio=rate/16000, outLen=Math.floor(f.length/ratio), out=new Float32Array(outLen);
+    for(let i=0;i<outLen;i++){ const idx=i*ratio, i0=Math.floor(idx), i1=Math.min(i0+1,f.length-1), fr=idx-i0; out[i]=f[i0]*(1-fr)+f[i1]*fr; }
+    return out;
+  }
+  async function liveMesaj(ev){
+    let d=ev.data; if(d instanceof Blob){ try{ d=await d.text(); }catch(e){ return; } }
+    let msg; try{ msg=JSON.parse(d); }catch(e){ return; }
+    if(msg.setupComplete){ setupTamam=true; wsHazir=true; if(durum==='canli'){ inputBaslat(); wakeYaz('bağlandı, konuş'); } return; }
+    const sc=msg.serverContent;
+    if(!sc) return;
+    if(sc.inputTranscription && sc.inputTranscription.text){ kullaniciMetni+=sc.inputTranscription.text; wakeYaz('🎤 '+kullaniciMetni.slice(-40)); }
+    if(sc.outputTranscription && sc.outputTranscription.text){ const t=sc.outputTranscription.text; erlikMetni+=t; wakeYaz('💬 '+erlikMetni.slice(-40)); if(ttsMotor!=='gemini'){ metinTampon+=t; cumleAyikla(); } }
+    if(sc.modelTurn && sc.modelTurn.parts){
+      for(const p of sc.modelTurn.parts){
+        if(p.inlineData && p.inlineData.data && ttsMotor==='gemini') sesCal(p.inlineData.data);
+        if(p.text){ erlikMetni+=p.text; wakeYaz('💬 '+erlikMetni.slice(-40)); if(ttsMotor!=='gemini'){ metinTampon+=p.text; cumleAyikla(); } }
+      }
+    }
+    if(sc.interrupted) sesleriDurdur();
+    if(sc.turnComplete){ if(ttsMotor!=='gemini') cumleAyikla(true); turnBitti(); }
+  }
+
+  function sesCal(data){
+    try{
+      const bytes=b64dec(data); const i16=new Int16Array(bytes.buffer);
+      const f=new Float32Array(i16.length); for(let i=0;i<i16.length;i++) f[i]=i16[i]/32768;
+      const buf=outCtx.createBuffer(1,f.length,24000); buf.getChannelData(0).set(f);
+      if(!cikisGain || cikisGain.context!==outCtx){ cikisGain=outCtx.createGain(); cikisGain.connect(outCtx.destination); }
+      cikisGain.gain.value=sesSeviye;
+      const s=outCtx.createBufferSource(); s.buffer=buf; s.connect(cikisGain);
+      let now=outCtx.currentTime; if(playTime<now) playTime=now;
+      s.start(playTime); playTime+=buf.duration; aktifSesler.push(s);
+      fw.classList.add('happy');
+    }catch(e){}
+  }
+  function sesleriDurdur(){ metinTampon=''; try{ window.speechSynthesis.cancel(); }catch(e){} aktifSesler.forEach(s=>{try{s.stop();}catch(e){}}); aktifSesler=[]; playTime=0; fw.classList.remove('happy'); }
+
+  function turnBitti(){
+    fw.classList.remove('happy');
+    const u=kullaniciMetni.trim(), r=erlikMetni.trim();
+    if(u) oturumaEkle('user',u);
+    if(r) oturumaEkle('model',r);
+    const uu=u.toLowerCase(); kullaniciMetni=''; erlikMetni='';
+    if(u){ mesajSay++; if(mesajSay%4===0) profilGuncelle(); }   // yavas yavas taniyip hafizaya yaz
+    if(u && VEDA.some(w=>uu.includes(w))){ wakeYaz('gorusuruz'); setTimeout(()=>{ profilGuncelle(); liveKapat('Dokun ve konus', true); }, 1600); }
+  }
+
+  function liveKapat(mesaj, tekrar){
+    setupTamam=false; wsHazir=false;
+    if(inNode){ try{inNode.disconnect(); inNode.onaudioprocess=null;}catch(e){} inNode=null; }
+    if(inSrc){ try{inSrc.disconnect();}catch(e){} inSrc=null; }
+    if(inCtx){ try{inCtx.close();}catch(e){} inCtx=null; }
+    if(inStream){ inStream.getTracks().forEach(t=>t.stop()); inStream=null; }
+    sesleriDurdur();
+    if(outCtx){ try{outCtx.close();}catch(e){} outCtx=null; }
+    if(ws){ try{ ws.onclose=null; ws.close(); }catch(e){} ws=null; }
+    fw.classList.remove('happy');
+    durum='kapali';
+    if(mesaj!==undefined) wakeYaz(mesaj);
+    if(tekrar) setTimeout(onIsit, 1200);   // tekrar isin (NFC gibi hazir beklesin)
+  }
+  // ACILISTA: gozler uyur; ilk dokununca acilir ve UYGULAMA boyunca acik kalir
+  gozKapa(); onIsit();
+
+  // Öne gelince (telefonu geri koyunca) Yüz'e dön
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) go('yuz'); });
+
+  // --- Telefon GERI tusu: uygulamadan cikma, once menuye/liste don ---
+  function detayAcik(){ const d=document.getElementById('oturumDetay'); return d && d.style.display!=='none'; }
+  try{ history.pushState({erlik:1},''); }catch(e){}
+  window.addEventListener('popstate',()=>{
+    const cur=document.querySelector('.view.active'); const id=cur?cur.id:'yuz';
+    if(id==='sohbet' && detayAcik()){ listeGoster(); try{history.pushState({erlik:1},'');}catch(e){} return; }
+    if(id!=='home'){ go('home'); try{history.pushState({erlik:1},'');}catch(e){} return; }
+    // menudeyken geri -> cikisa izin ver (tekrar push yok)
+  });
+
+</script>
+</body>
+</html>
